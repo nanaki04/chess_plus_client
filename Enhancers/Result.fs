@@ -26,6 +26,10 @@ module Result =
     | Error e, _ -> Error e
     | _, Error e -> Error e
     
+  let unwrap lst =
+    List.fold (merge (fun acc v -> v :: acc)) (Ok []) lst
+    <!> List.rev
+    
   let orElse v f =
     match v with
     | Error e -> f e
@@ -37,3 +41,9 @@ module Result =
     | _ -> ()
     
   let (<!!>) = orFinally
+  
+  let pushOutward v =
+    match v with
+    | (Some (Ok v)) -> v |> Some |> Ok
+    | (Some (Error e)) -> Error e
+    | None -> Ok None

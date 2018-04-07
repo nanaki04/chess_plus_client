@@ -27,18 +27,21 @@ type TileView () =
       | Black -> img.color <- new Color(0.0f, 0.0f, 0.0f, 255.0f)
     ) image
 
-  let onTileChange ({ Color = color } : Tile) _ =
-    changeColor color
-    
-  let init coordinate tile =
-    unsubscribe <- observeTile coordinate onTileChange
-    flow (addTileWave { Coordinate = coordinate; Tile = tile })
+  member m.OnTileChange (tile : Option<Tile>) _ =
+    tile
+    |> Option.map (fun { Color = color } -> changeColor color)
+    |> Option.orElseWith (fun () -> Some (GameObject.Destroy(m)))
+    |> ignore
     
   override m.Start () =
     base.Start () 
     
   member m.Init row column color =
-    init (row, column) (Tile.create color)
+    unsubscribe <- observeTile (row, column) m.OnTileChange
+    flow <| addTileWave (AddTileAmplitude {
+      Coordinate = (row, column);
+      Tile = Tile.create color None None None;
+    })
     <!!> Logger.warn
     m
     

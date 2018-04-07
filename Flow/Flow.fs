@@ -6,13 +6,13 @@ module Flow =
   open Tides
   open WellLogger
   
-  let mutable private maelstrom = invoke initialLifeWell tides List.empty [wellLogger]
+  let mutable private maelstrom = invoke LifeWell.initial tides List.empty [wellLogger]
   
   let flow wave =
     maelstrom <- flow wave maelstrom
-    UnityEngine.Debug.Log("FLOW REFLECTIONS")
+    Logger.log "FLOW REFLECTIONS"
     List.map (fun refl ->
-      UnityEngine.Debug.Log(refl)
+      Logger.log refl
       refl
     ) maelstrom.reflection
     |> ignore

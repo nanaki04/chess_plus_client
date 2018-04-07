@@ -19,9 +19,3 @@ module Adapters =
       | ColorEnumDto.White -> Ok White
       | ColorEnumDto.Black -> Ok Black
       | _ -> Error ("No such color: " + color.ToString())
-
-  module Nullable =
-    let maybe f v =
-      match v with
-      | null -> ()
-      | v -> f v

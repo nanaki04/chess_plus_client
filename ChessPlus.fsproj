@@ -62,6 +62,10 @@
   <ItemGroup>
     <Compile Include="Enhancers/Result.fs" />
     <Compile Include="Enhancers/Col.fs" />
+    <Compile Include="Enhancers/Nullable.fs" />
+    <Compile Include="Enhancers/Map.fs" />
+    <Compile Include="Enhancers/Option.fs" />
+    <Compile Include="Enhancers/Tuple.fs" />
     <Compile Include="Types.fs" />
     <Compile Include="Logging/Logger.fs" />
     <Compile Include="AssemblyInfo.fs" />

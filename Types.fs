@@ -4,6 +4,8 @@ type Color =
 | White
 | Black
 
+type Name = string
+
 type Row =
 | One
 | Two
@@ -26,6 +28,25 @@ type Column =
 
 type Coordinate = Row * Column
 
+type Piece = {
+  Color : Color;
+}
+
+type King = Piece
+type Queen = Piece
+type Rook = Piece
+type Bishop = Piece
+type Knight = Piece
+type Pawn = Piece
+
+type Pieces =
+| King of King
+| Queen of Queen
+| Rook of Rook
+| Bishop of Bishop
+| Knight of Knight
+| Pawn of Pawn
+
 module Types =
   module Column =
     let fromInt x =
@@ -39,3 +60,9 @@ module Types =
       | 7 -> Ok G
       | 8 -> Ok H
       | _ -> Error ("Index out of range: " + x.ToString())
+      
+  module Piece =
+    let create color =
+      {
+        Color = color;
+      }

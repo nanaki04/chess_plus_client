@@ -3,23 +3,47 @@ open System.Collections.Generic
 
 module DtoTypes =  
   type ColorDto = string
+  type PieceDto (pieceType, color) =
+    new (pieceType) =
+      PieceDto (pieceType, Unchecked.defaultof<ColorDto>)
+    member m.Type = pieceType
+    member m.Color = color
   type RowDto = int      
   type ColumnDto = string      
   type CoordinateDto = {
     Row : int;
-    Column : string
+    Column : string;
   }
-  type TileDto = {
-    Color : ColorDto
-  }
+  type TileDto (color, piece, selectedBy, conquerableBy) =
+    new (color, piece, selectedBy) =
+      TileDto (color, piece, selectedBy, Unchecked.defaultof<ColorDto>)
+    new (color, piece) =
+      TileDto (color, piece, Unchecked.defaultof<ColorDto>, Unchecked.defaultof<ColorDto>)
+    member m.Color = color
+    member m.Piece = piece
+    member m.SelectedBy = selectedBy
+    member m.ConquerableBy = conquerableBy
+      
   type BoardDto = {
-    Tiles : IDictionary<int, IDictionary<string, TileDto>>
-  }    
-  type LifeWellDto = {
+    Tiles : IDictionary<int, IDictionary<string, TileDto>>;
+  }
+  type PlayerDto = {
+    Name : string;
+  }
+  type DuelistDto = {
+    Name : string;
+    Color : ColorDto;
+  }
+  type DuelDto = {
+    Duelists : list<DuelistDto>;
     Board : BoardDto;
   }
+  type LifeWellDto (player, duel) =
+    member m.Player = player
+    member m.Duel = duel
 
 module JsonConversions =
+  open Types
   open DtoTypes
   open Microsoft.FSharp.Reflection
   open System.Collections.Generic
@@ -29,13 +53,20 @@ module JsonConversions =
   open Col
   
   let export dto =
-    dto
-    |> JsonConvert.SerializeObject
+    let settings = new JsonSerializerSettings ()
+    settings.NullValueHandling <- NullValueHandling.Ignore
+    JsonConvert.SerializeObject (dto, settings)
     
   let import<'t> json =
     JsonConvert.DeserializeObject<'t> json
     |> Ok
     
+  let private importNullable<'T> n importer : Result<Option<'T>, string> =
+    n
+    |> Nullable.toOption
+    |> Option.map importer
+    |> Result.pushOutward
+
   module ColorDto =
     let export color =
       match color with
@@ -46,7 +77,37 @@ module JsonConversions =
       match color with
       | "White" -> Ok White
       | "Black" -> Ok Black
-      | _ -> Error ("No such color: " + color)      
+      | _ -> Error ("No such color: " + color) 
+
+  module PieceDto =
+    let private exportPiece<'t> pieceType (piece : Piece) =
+      let pieceDto = new PieceDto(pieceType, ColorDto.export piece.Color)
+      pieceDto
+  
+    let export piece =
+      match piece with
+      | Some (King king) -> exportPiece "King" king
+      | Some (Queen queen) -> exportPiece "Queen" queen
+      | Some (Rook rook) -> exportPiece "Rook" rook
+      | Some (Bishop bishop) -> exportPiece "Bishop" bishop
+      | Some (Knight knight) -> exportPiece "Knight" knight
+      | Some (Pawn pawn) -> exportPiece "Pawn" pawn
+      | _ -> new PieceDto("None")
+      
+    let inline private importPiece (piece : PieceDto) =
+      Ok Piece.create
+      <*> ColorDto.import piece.Color
+      
+    let import (piece : PieceDto) =
+      match piece.Type with
+      | "King" -> importPiece piece <!> King <!> Some
+      | "Queen" -> importPiece piece <!> Queen <!> Some
+      | "Rook" -> importPiece piece <!> Rook <!> Some
+      | "Bishop" -> importPiece piece <!> Bishop <!> Some
+      | "Knight" -> importPiece piece <!> Knight <!> Some
+      | "Pawn" -> importPiece piece <!> Pawn <!> Some
+      | "None" -> Ok None
+      | _ -> Error ("No such piece: " + piece.Type)
     
   module RowDto =
     let export row =
@@ -115,13 +176,18 @@ module JsonConversions =
 
   module TileDto =
     let export (tile : Tile) =
-      {
-        Color = ColorDto.export tile.Color
-      }
-      
+      new TileDto (
+        ColorDto.export tile.Color,
+        PieceDto.export tile.Piece,
+        tile.SelectedBy |> Nullable.fromOption |> Nullable.map ColorDto.export,
+        tile.ConquerableBy |> Nullable.fromOption |> Nullable.map ColorDto.export
+      )
     let import (tile : TileDto) : Result<Tile, string> =
       Ok Tile.create
       <*> ColorDto.import tile.Color
+      <*> PieceDto.import tile.Piece
+      <*> (importNullable tile.SelectedBy ColorDto.import)
+      <*> (importNullable tile.ConquerableBy ColorDto.import)
 
   module BoardDto =
     let export (board : Board) : BoardDto =
@@ -154,19 +220,64 @@ module JsonConversions =
       let rowMerger col rowKV =
         Ok (fun col (k, v) -> Col.add k v col)
         <*> col
-        <*> (makeRowKV rowKV)
+        <*> makeRowKV rowKV
       let tiles =
         Dict board.Tiles
         |> Col.reduce rowMerger (Map.empty |> Map |> Ok)
       Ok (fun (tiles : Col<Row, Map<Column, Tile>>) -> Board.create (Col.toMap tiles))
       <*> tiles
-    
-  module LifeWellDto =
-    let export (lifewell : LifeWell) =
+      
+  module PlayerDto =
+    let export (player : Player) : PlayerDto =
       {
-        Board = (BoardDto.export lifewell.Board)
+        Name = player.Name;
       }
       
-    let import lifeWell =
+    let import (player : PlayerDto) : Result<Player, string> =
+      match player.Name with
+      | null -> Error "No player name provided"
+      | name -> Ok name
+      <!> Player.create
+      
+  module DuelistDto =
+    let export (duelist : Duelist) : DuelistDto =
+      {
+        Color = ColorDto.export duelist.Color;
+        Name = duelist.Name;
+      }
+      
+    let import (duelist : DuelistDto) =
+      Ok Duelist.create
+      <*> Ok duelist.Name
+      <*> ColorDto.import duelist.Color
+      
+  module DuelDto =
+    let export (duel : Duel) =
+      let duelists = List.map DuelistDto.export duel.Duelists;
+      {
+        Duelists = duelists;
+        Board = BoardDto.export duel.Board;
+      }
+      
+    let import (duel : DuelDto) =
+      Ok Duel.create
+      <*> (List.map DuelistDto.import duel.Duelists |> unwrap)
+      <*> BoardDto.import duel.Board
+      
+  module LifeWellDto =
+    let export (lifewell : LifeWell) =
+      let duel =
+        match lifewell.Duel with
+        | Some duel -> DuelDto.export duel
+        | _ -> Unchecked.defaultof<DuelDto>
+      new LifeWellDto (PlayerDto.export lifewell.Player, duel)
+      
+    let import (lifewell : LifeWellDto) =
+      let duel =
+        if Unchecked.defaultof<DuelDto> = lifewell.Duel
+        then Ok None
+        else DuelDto.import lifewell.Duel <!> Some
+
       Ok LifeWell.create
-      <*> (BoardDto.import lifeWell.Board)
+      <*> PlayerDto.import lifewell.Player
+      <*> duel

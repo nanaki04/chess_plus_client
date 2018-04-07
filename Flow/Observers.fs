@@ -6,11 +6,11 @@ module Observers =
   open Flow
   open Maelstrom.WellGuardians
 
-  let observeBoard (react : Board -> LifeWell -> unit) =
+  let observeBoard (react : Option<Board> -> LifeWell -> unit) =
     watcher findBoard react
     |> guard
     
-  let observeTile coord (react : Tile -> LifeWell -> unit) =
+  let observeTile coord (react : Option<Tile> -> LifeWell -> unit) =
     watcher (findTile coord) react
     |> guard
     

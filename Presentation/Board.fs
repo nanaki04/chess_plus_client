@@ -47,8 +47,12 @@ type BoardView () =
     |> List.map m.MakeRow
     
   override m.Start () =
-    base.Start ()  
-    m.MakeBoard () |> ignore
+    base.Start ()
+    flow <| startDuelWave (StartDuelAmplitude {
+      Duel = Duel.initial;
+    })
+    <!> fun _ -> m.MakeBoard ()
+    <!!> Logger.warn
     
   override m.OnDestroy () =
     base.OnDestroy ()
