@@ -5,12 +5,12 @@ type Result<'T, 'TError> =
 | Error of 'TError
 
 module Result =
-  let map v f =
+  let map f v =
     match v with
     | Error err -> Error err
     | Ok value -> f value |> Ok
     
-  let (<!>) = map
+  let (<!>) = fun f v -> map v f
   
   let apply f v =
     match f, v with
@@ -47,3 +47,16 @@ module Result =
     | (Some (Ok v)) -> v |> Some |> Ok
     | (Some (Error e)) -> Error e
     | None -> Ok None
+    
+  let fromOption<'T> o : Result<'T, string> =
+    match o with
+    | Some v -> Ok v
+    | None -> Error "No such value"
+    
+  let flatten r =
+    match r with
+    | Ok (Ok v) -> Ok v
+    | Ok (Error e) -> Error e
+    | Error e -> Error e
+    
+  let (<!>>) = fun v f -> v <!> f |> flatten

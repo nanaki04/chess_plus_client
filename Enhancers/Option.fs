@@ -23,6 +23,11 @@ module Option =
     | None -> if pred then def else None
     | some -> some
     
+  let orFinally f v =
+    match v with
+    | None -> f ()
+    | _ -> ()  
+      
   let apply f v =
     match f, v with
     | Some f, Some v -> Some (f v)

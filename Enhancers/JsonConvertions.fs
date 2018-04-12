@@ -57,7 +57,7 @@ module JsonConversions =
     settings.NullValueHandling <- NullValueHandling.Ignore
     JsonConvert.SerializeObject (dto, settings)
     
-  let import<'t> json =
+  let import<'t> json : Result<'t, string> =
     JsonConvert.DeserializeObject<'t> json
     |> Ok
     

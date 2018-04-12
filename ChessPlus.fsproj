@@ -66,6 +66,8 @@
     <Compile Include="Enhancers/Map.fs" />
     <Compile Include="Enhancers/Option.fs" />
     <Compile Include="Enhancers/Tuple.fs" />
+    <Compile Include="Enhancers/Matrix.fs" />
+    <Compile Include="Connection/Udp.fs" />
     <Compile Include="Types.fs" />
     <Compile Include="Logging/Logger.fs" />
     <Compile Include="AssemblyInfo.fs" />
@@ -76,6 +78,7 @@
     <Compile Include="Enhancers/JsonConvertions.fs" />
     <Compile Include="Logging/WellLogger.fs" />
     <Compile Include="Waves/Waves.fs" />
+    <Compile Include="Enhancers/WaveMoulders.fs" />
     <Compile Include="Tides/Tides.fs" />
     <Compile Include="Flow/Flow.fs" />
     <Compile Include="Flow/Observers.fs" />
@@ -83,6 +86,7 @@
     <Compile Include="Presentation/Presentation.fs" />
     <Compile Include="Presentation/Tile.fs" />
     <Compile Include="Presentation/Board.fs" />
+    <Compile Include="Presentation/UdpStream.fs" />
     <None Include="packages.config" />
     <None Include="Script.fsx" />
   </ItemGroup>

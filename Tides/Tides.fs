@@ -5,10 +5,13 @@ module Tides =
   open Updaters
   open Finders
   open Result
+  open JsonConversions
+  open Moulds
   open Microsoft.FSharp.Reflection
   
   let (<!>) = fun o f -> Option.map f o
   let (<!>>) = fun o f -> o |> Option.map f |> Option.flatten
+  let upstream<'a> = export >> Udp.send >> ignore
   
   let tide<'A> loc (action : 'A -> LifeWell -> LifeWell) =
     (loc, fun ((_ : string * string), (amplitude : Amplitude)) well ->
@@ -24,8 +27,9 @@ module Tides =
     
     // TODO send to server
     tide<LoginAmplitude> loginLocation (fun amplitude well ->
-      let ({ Name = name } : LoginAmplitude) = amplitude
-      updatePlayer (fun _ -> { Name = name } : Player) well
+      LoginMould.export ((loginLocation, amplitude))
+      |> upstream
+      well
     );
     
     tide<ConfirmLoginAmplitude> confirmLoginLocation (fun amplitude well ->
@@ -105,30 +109,9 @@ module Tides =
     
     tide<DeselectTileAmplitude> deselectTileLocation (fun amplitude well ->
       let ({ Player = playerColor } : DeselectTileAmplitude) = amplitude
-      let colWithColor (acc : Option<Column>) (col : Column) (tile : Tile) : Option<Column> =
-        Option.orElseIf (tile.SelectedBy = (Some playerColor)) (Some col) acc
-      let coordWithColor (acc : Option<Row * Column>) row cols : Option<Coordinate> =
-        Option.orElse ((Map.fold colWithColor None cols) <!> fun col -> (row, col)) None
-
-      well
-      |> findTiles
-      |> fun x -> x
-      <!>> Map.fold coordWithColor None
-      <!> fun coord -> updateTile coord (fun t -> { t with SelectedBy = None }) well
-      |> Option.defaultValue well
+      updateTiles (Matrix.updateWhere
+        (fun t -> t.SelectedBy = Some playerColor)
+        (fun t -> { t with SelectedBy = None }))
+        well
     );  
-    
-//    (addTileLocation, fun (_, amplitude) well ->
-//      match amplitude with
-//      | AddTileAmplitude { Coordinate = coordinate; Tile = tile } ->
-//        updateTile coordinate (fun _ -> tile) well
-//      | _ -> well
-//    );
-//    
-//    (startDuelLocation, fun (_, amplitude) well ->
-//      match amplitude with
-//      | StartDuelAmplitude { Duel = duel } ->
-//        updateDuel (fun _ -> duel) well
-//      | _ -> well
-//    );
   ]
