@@ -532,6 +532,7 @@ module Moulds =
     JsonConversions.import<'t> mould <!>> fun (m : 't) -> (m :> Importable).import ()    
         
   let import mould =
+    Logger.log "IMPORT MOULD"
     let loc =
       JsonConversions.import<Mould> mould <!>> fun m -> m.import ()
       
@@ -543,7 +544,11 @@ module Moulds =
     | l when l = loginLocation -> make<LoginMould> mould
     | l when l = confirmLoginLocation -> make<ConfirmLoginMould> mould
     | l when l = reportFailureLocation -> make<ReportFailureMould> mould
-    | l when l = startDuelLocation -> make<StartDuelMould> mould
+    | l when l = startDuelLocation ->
+      Logger.log "HANDLE START DUEL MOULD"
+      let result = make<StartDuelMould> mould
+      Logger.log result
+      result
     | l when l = joinDuelLocation -> make<JoinDuelMould> mould
     | l when l = addDuelistLocation -> make<AddDuelistMould> mould
     | l when l = setupBoardLocation -> make<SetupBoardMould> mould

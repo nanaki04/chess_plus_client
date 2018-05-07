@@ -56,7 +56,7 @@ type Clause = Operator * Condition
 type Conditions =
 | Clause of Clause
 | AllOf of Clause list
-| AnyOf of Clause list
+| OneOf of Clause list
 | Combination of Conditions list
 
 type MoveRule = {

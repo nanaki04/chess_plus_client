@@ -353,9 +353,9 @@ module JsonConversions =
       match operator.Type with
       | "Is" -> Ok Is
       | "Not" -> Ok Not
-      | "Equals" -> Nullable.toResult operator.Value <!> Equals
-      | "GreaterThan" -> Nullable.toResult operator.Value  <!> GreaterThan
-      | "SmallerThan" -> Nullable.toResult operator.Value  <!> SmallerThan
+      | "Equals" -> Ok (Equals operator.Value)
+      | "GreaterThan" -> Ok (GreaterThan operator.Value)
+      | "SmallerThan" -> Ok (SmallerThan operator.Value)
       | t -> Error ("Operator type not found " + t)    
 
   module ClauseDto =
@@ -375,13 +375,13 @@ module JsonConversions =
       let dto = new ConditionsDto ()
       match conditions with
       | Clause c ->
-        dto.Type <- "OneOf"
+        dto.Type <- "Clause"
         dto.Clause <- ClauseDto.export c
       | AllOf c ->
         dto.Type <- "AllOf"
         dto.Clauses <- List.map ClauseDto.export c |> List.toArray
-      | AnyOf c ->
-        dto.Type <- "AnyOf"
+      | OneOf c ->
+        dto.Type <- "OneOf"
         dto.Clauses <- List.map ClauseDto.export c |> List.toArray
       | Combination c ->
         dto.Type <- "Combination"
@@ -390,7 +390,7 @@ module JsonConversions =
       
     let rec import (conditions : ConditionsDto) =
       match conditions.Type with
-      | "OneOf" ->
+      | "Clause" ->
         ClauseDto.import conditions.Clause <!> Clause
       | "AllOf" ->
         conditions.Clauses
@@ -398,12 +398,12 @@ module JsonConversions =
         |> List.map ClauseDto.import
         |> Result.unwrap
         <!> AllOf
-      | "AnyOf" ->
+      | "OneOf" ->
         conditions.Clauses
         |> List.ofArray
         |> List.map ClauseDto.import
         |> Result.unwrap
-        <!> AnyOf
+        <!> OneOf
       | "Combination" ->
         conditions.Combination
         |> List.ofArray
@@ -518,7 +518,7 @@ module JsonConversions =
       | Some (Bishop bishop) -> exportPiece "Bishop" bishop
       | Some (Knight knight) -> exportPiece "Knight" knight
       | Some (Pawn pawn) -> exportPiece "Pawn" pawn
-      | _ -> new PieceDto("None")
+      | _ -> new PieceDto()
       
     let inline private importPiece (piece : PieceDto) =
       Ok Piece.create
@@ -532,7 +532,6 @@ module JsonConversions =
       | "Bishop" -> importPiece piece <!> Bishop <!> Some
       | "Knight" -> importPiece piece <!> Knight <!> Some
       | "Pawn" -> importPiece piece <!> Pawn <!> Some
-      | "None" -> Ok None
       | _ -> Error ("No such piece: " + piece.Type)
 
   module TileDto =
@@ -544,9 +543,14 @@ module JsonConversions =
         tile.ConquerableBy |> Nullable.fromOption |> Nullable.map ColorDto.export
       )
     let import (tile : TileDto) : Result<Tile, string> =
+      let piece =
+        match Nullable.toOption tile.Piece with
+        | None -> Ok None
+        | Some pieceDto -> PieceDto.import pieceDto
+        
       Ok Tile.create
       <*> ColorDto.import tile.Color
-      <*> (tile.Piece |> Nullable.toOption |> Option.map PieceDto.import)
+      <*> piece
       <*> (importNullable tile.SelectedBy ColorDto.import)
       <*> (importNullable tile.ConquerableBy ColorDto.import)
 

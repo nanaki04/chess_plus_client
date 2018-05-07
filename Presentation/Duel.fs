@@ -17,7 +17,7 @@ type DuelView () =
   member m.OnDuelChange duel _ =
     match duel, board, Nullable.toOption boardPrefab with
     | Some d, None, Some p ->
-      board <- GameObject.Instantiate (p, m.transform) :?> BoardView
+      board <- (GameObject.Instantiate (p, m.transform) :?> GameObject).GetComponent<BoardView>()
       |> (fun b -> b.Init d.Board)
       |> Some
     | None, Some b, _ ->

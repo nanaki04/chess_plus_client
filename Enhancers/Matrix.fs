@@ -17,8 +17,10 @@ module Matrix =
     m
     |> Map.tryFind r
     |> function
-      | None -> m.Add(r, Map.empty.Add(c, v))
-      | Some row -> m.Add(r, row.Add(c, v))
+      | None ->
+        m.Add(r, Map.empty.Add(c, v))
+      | Some row ->
+        m.Add(r, row.Add(c, v))
 
   let private mapColumns f cols =
     Map.map (fun col v -> f v) cols
@@ -35,7 +37,7 @@ module Matrix =
     ) m
     
   let private foldColumns f s r cols =
-    Map.fold (fun state c v -> f s r c v) s cols
+    Map.fold (fun state c v -> f state r c v) s cols
     
   let fold f s m =
     Map.fold (fun state row cols -> foldColumns f state row cols) s m
