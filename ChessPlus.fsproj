@@ -60,6 +60,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Logging/Logger.fs" />
     <Compile Include="Enhancers/Result.fs" />
     <Compile Include="Enhancers/Col.fs" />
     <Compile Include="Enhancers/Nullable.fs" />
@@ -67,9 +68,9 @@
     <Compile Include="Enhancers/Option.fs" />
     <Compile Include="Enhancers/Tuple.fs" />
     <Compile Include="Enhancers/Matrix.fs" />
+    <Compile Include="Connection/Tcp.fs" />
     <Compile Include="Connection/Udp.fs" />
     <Compile Include="Types.fs" />
-    <Compile Include="Logging/Logger.fs" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="ChessPlus.fs" />
     <Compile Include="State/Well.fs" />
@@ -79,14 +80,21 @@
     <Compile Include="Logging/WellLogger.fs" />
     <Compile Include="Waves/Waves.fs" />
     <Compile Include="Enhancers/WaveMoulders.fs" />
+    <Compile Include="Tides/Pool.fs" />
     <Compile Include="Tides/Tides.fs" />
     <Compile Include="Flow/Flow.fs" />
     <Compile Include="Flow/Observers.fs" />
     <Compile Include="Presentation/Adapters.fs" />
     <Compile Include="Presentation/Presentation.fs" />
+    <Compile Include="Presentation/Piece.fs" />
+    <Compile Include="Presentation/PieceFactory.fs" />
     <Compile Include="Presentation/Tile.fs" />
     <Compile Include="Presentation/Board.fs" />
+    <Compile Include="Presentation/Duel.fs" />
+    <Compile Include="Presentation/Player.fs" />
+    <Compile Include="Presentation/Login.fs" />
     <Compile Include="Presentation/UdpStream.fs" />
+    <Compile Include="Presentation/TcpStream.fs" />
     <None Include="packages.config" />
     <None Include="Script.fsx" />
   </ItemGroup>

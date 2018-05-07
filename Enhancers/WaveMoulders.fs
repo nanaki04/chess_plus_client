@@ -94,39 +94,65 @@ module Moulds =
     
     interface Importable with
       member m.import () =
-        Logger.warn m.Name
-        Logger.warn m.Location
         Ok (fun name ->
           LoginAmplitude {
             Name = name;
           })
         <*> Nullable.toResult m.Name
         <!> loginWave
-
-  type ConfirmLoginMould () =
+        
+  type PlayerCreatedMould () =
     let mutable location = Unchecked.defaultof<LocationMould>
-    let mutable name = null
+    let mutable player = Unchecked.defaultof<PlayerDto>
     
     member m.Location
       with get() = location
       and set(v) = location <- v
-    member m.Name
-      with get() = name
-      and set(v) = name <- v
+    member m.Player
+      with get() = player
+      and set(v) = player <- v
+    
+    static member export (wave) =
+      let (loc, ampl : PlayerCreatedAmplitude) = wave
+      let m = new PlayerCreatedMould ()
+      m.Location <- LocationMould.export loc
+      m.Player <- PlayerDto.export ampl.Player
+      m
+      
+    interface Importable with
+      member m.import () =
+        Ok (fun player ->
+          PlayerCreatedAmplitude {
+            Player = player;
+          })
+        <*> PlayerDto.import m.Player
+        <!> playerCreatedWave
+
+  type ConfirmLoginMould () =
+    let mutable location = Unchecked.defaultof<LocationMould>
+    let mutable player = Unchecked.defaultof<PlayerDto>
+    
+    member m.Location
+      with get() = location
+      and set(v) = location <- v
+    member m.Player
+      with get() = player
+      and set(v) = player <- v
       
     static member export(wave) =
       let (loc, ampl : ConfirmLoginAmplitude) = wave
       let m = new ConfirmLoginMould ()
       m.Location <- LocationMould.export loc
-      m.Name <- ampl.Name
+      m.Player <- PlayerDto.export ampl.Player
+      m
     
     interface Importable with
       member m.import () =
-        Ok (fun name ->
-          LoginAmplitude {
-            Name = name;
+        Ok (fun player ->
+          ConfirmLoginAmplitude {
+            Player = player;
           })
-        <*> Nullable.toResult m.Name
+        <*> PlayerDto.import m.Player
         <!> confirmLoginWave
 
   type ReportFailureMould () =
@@ -145,6 +171,7 @@ module Moulds =
       let m = new ReportFailureMould ()
       m.Location <- LocationMould.export loc
       m.Reason <- ampl.Reason
+      m
     
     interface Importable with
       member m.import () = 
@@ -154,6 +181,33 @@ module Moulds =
           })
         <*> Nullable.toResult m.Reason
         <!> reportFailureWave
+
+  type NewDuelMould () =
+    let mutable location = Unchecked.defaultof<LocationMould>
+    let mutable map = Unchecked.defaultof<TerritoryDto>
+    
+    member m.Location
+      with get() = location
+      and set(v) = location <- v
+    member m.Map
+      with get() = map
+      and set(v) = map <- v
+      
+    static member export (wave) =
+      let (loc, ampl : NewDuelAmplitude) = wave
+      let m = new NewDuelMould ()
+      m.Location <- LocationMould.export loc
+      m.Map <- TerritoryDto.export ampl.Map
+      m
+      
+    interface Importable with
+      member m.import () =
+        Ok (fun map ->
+          NewDuelAmplitude {
+            Map = map;
+          })
+        <*> TerritoryDto.import m.Map
+        <!> newDuelWave
 
   type StartDuelMould () =
     let mutable location = Unchecked.defaultof<LocationMould>
@@ -171,6 +225,7 @@ module Moulds =
       let m = new StartDuelMould ()
       m.Location <- LocationMould.export loc
       m.Duel <- ampl.Duel |> DuelDto.export
+      m
     
     interface Importable with
       member m.import () =
@@ -202,6 +257,7 @@ module Moulds =
       m.Location <- LocationMould.export loc
       m.Player <- ampl.Player |> PlayerDto.export
       m.ID <- ampl.ID
+      m
     
     interface Importable with
       member m.import () =
@@ -230,6 +286,7 @@ module Moulds =
       let m = new AddDuelistMould ()
       m.Location <- LocationMould.export loc
       m.Duelist <- ampl.Duelist |> DuelistDto.export
+      m
       
     interface Importable with
       member m.import () =
@@ -256,6 +313,7 @@ module Moulds =
       let m = new SetupBoardMould ()
       m.Location <- LocationMould.export loc
       m.Board <- ampl.Board |> BoardDto.export
+      m
     
     interface Importable with
       member m.import () =
@@ -286,6 +344,8 @@ module Moulds =
       let m = new AddPieceMould ()
       m.Location <- LocationMould.export loc
       m.Piece <- Some ampl.Piece |> PieceDto.export
+      m.Coordinate <- ampl.Coordinate |> CoordinateDto.export
+      m
     
     interface Importable with
       member m.import () =
@@ -314,6 +374,7 @@ module Moulds =
       let m = new RemovePieceMould ()
       m.Location <- LocationMould.export loc
       m.Coordinate <- CoordinateDto.export ampl.Coordinate
+      m
     
     interface Importable with
       member m.import () =
@@ -350,6 +411,7 @@ module Moulds =
       m.Piece <- Some ampl.Piece |> PieceDto.export
       m.From <- ampl.From |> CoordinateDto.export
       m.To <- ampl.To |> CoordinateDto.export
+      m
     
     interface Importable with
       member m.import () =
@@ -390,6 +452,7 @@ module Moulds =
       m.Piece <- Some ampl.Piece |> PieceDto.export
       m.From <- ampl.From |> CoordinateDto.export
       m.To <- ampl.To |> CoordinateDto.export
+      m
 
     interface Importable with
       member m.import () =
@@ -425,6 +488,7 @@ module Moulds =
       m.Location <- LocationMould.export loc
       m.Player <- ampl.Player |> ColorDto.export
       m.Coordinate <- ampl.Coordinate |> CoordinateDto.export
+      m
 
     interface Importable with
       member m.import () =
@@ -453,6 +517,7 @@ module Moulds =
       let m = new DeselectTileMould ()
       m.Location <- LocationMould.export loc
       m.Player <- ampl.Player |> ColorDto.export
+      m
 
     interface Importable with
       member m.import () =
@@ -470,8 +535,11 @@ module Moulds =
     let loc =
       JsonConversions.import<Mould> mould <!>> fun m -> m.import ()
       
+    Logger.log loc
+      
     loc <!>> function
     | l when l = addTileLocation -> make<AddTileMould> mould
+    | l when l = playerCreatedLocation -> make<PlayerCreatedMould> mould
     | l when l = loginLocation -> make<LoginMould> mould
     | l when l = confirmLoginLocation -> make<ConfirmLoginMould> mould
     | l when l = reportFailureLocation -> make<ReportFailureMould> mould

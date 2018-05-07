@@ -37,3 +37,16 @@ module Option =
     match v with
     | Some v -> v
     | None -> def
+    
+  let bind f v : Option<_> =
+    match v with
+    | Some v -> f v
+    | None -> None
+    
+  let bindAndFlatten<'v> (f : 'v -> Option<_>) (v : Option<'v>) =
+    bind f v
+    |> flatten
+    
+  let (>>=) = fun v f -> bind f v
+  
+  let (>>>=) = fun v f -> bindAndFlatten f v

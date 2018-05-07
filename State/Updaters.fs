@@ -7,7 +7,10 @@ module Updaters =
   let update updater well =
     updater well
     
-  let updatePlayer (updater : Player -> Player) (well : LifeWell) =
+  let updateConnection (updater : Connection -> Connection) (well : LifeWell) =
+    { well with Connection = updater well.Connection }
+    
+  let updatePlayer (updater : Option<Player> -> Option<Player>) (well : LifeWell) =
     { well with Player = updater well.Player }
     
   let updateDuel (updater : Option<Duel> -> Option<Duel>) (well : LifeWell) =

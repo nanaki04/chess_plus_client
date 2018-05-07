@@ -9,6 +9,7 @@ module Flow =
   let mutable private maelstrom = invoke LifeWell.initial tides List.empty [wellLogger]
   
   let flow wave =
+    Logger.log (JsonConversions.export (Moulds.LocationMould.export (Tuple.fst wave)))
     maelstrom <- flow wave maelstrom
     Logger.log "FLOW REFLECTIONS"
     List.map (fun refl ->

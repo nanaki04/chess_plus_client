@@ -58,3 +58,12 @@ module Col =
       |> fun map -> Map (map.Add (k, v))
       |> toDict
       |> Dict
+      
+  module Result =
+    let unwrapCol col =
+      reduce (fun acc (k, v) ->
+        match v with
+        | Ok v -> Result.map (add k v) acc
+        | Error err -> Error err
+      ) (Ok (Map Map.empty)) col
+    

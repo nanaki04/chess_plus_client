@@ -11,7 +11,8 @@ module Tides =
   
   let (<!>) = fun o f -> Option.map f o
   let (<!>>) = fun o f -> o |> Option.map f |> Option.flatten
-  let upstream<'a> = export >> Udp.send >> ignore
+  let upstream<'a> = export<'a> >> Udp.send >> ignore
+  let upstreamTcp<'a> = export<'a> >> Tcp.send >> ignore
   
   let tide<'A> loc (action : 'A -> LifeWell -> LifeWell) =
     (loc, fun ((_ : string * string), (amplitude : Amplitude)) well ->
@@ -20,21 +21,46 @@ module Tides =
     );
       
   let tides = [
+    tide<UpdateTcpConnectionAmplitude> updateTcpConnectionLocation (fun amplitude well ->
+      updateConnection (fun c -> { c with Tcp = amplitude.Connected }) well
+    );
+    
+    tide<UpdateUdpConnectionAmplitude> updateUdpConnectionLocation (fun amplitude well ->
+      updateConnection (fun c -> { c with Udp = amplitude.Connected }) well
+    );
+  
     tide<AddTileAmplitude> addTileLocation (fun amplitude well ->
       let { Coordinate = coordinate; Tile = tile } = amplitude
       updateTile coordinate (fun _ -> tile) well
     );
     
+    // TODO request player info from player
+    tide<DefaultAmplitude> requireLoginLocation (fun () well ->
+      let amplitude : LoginAmplitude = { Name = "Sheep" }
+      LoginMould.export (loginLocation, amplitude)
+      |> upstream
+      well
+    );
+    
+    tide<PlayerCreatedAmplitude> playerCreatedLocation (fun amplitude well ->
+      let ({ Player = { Name = name }} : PlayerCreatedAmplitude) = amplitude
+      let loginAmplitude : LoginAmplitude = { Name = name }
+      LoginMould.export (loginLocation, loginAmplitude)
+      |> upstreamTcp
+      well
+    );
+    
     // TODO send to server
+    // @depricated
     tide<LoginAmplitude> loginLocation (fun amplitude well ->
-      LoginMould.export ((loginLocation, amplitude))
+      LoginMould.export (loginLocation, amplitude)
       |> upstream
       well
     );
     
     tide<ConfirmLoginAmplitude> confirmLoginLocation (fun amplitude well ->
-      let ({ Name = name } : ConfirmLoginAmplitude) = amplitude
-      updatePlayer (fun _ -> { Name = name } : Player) well
+      let ({ Player = player } : ConfirmLoginAmplitude) = amplitude
+      updatePlayer (fun _ -> Some player) well
     );
     
     tide<FailedLoginAmplitude> failedLoginLocation (fun amplitude well ->
@@ -48,6 +74,12 @@ module Tides =
       let ({ Reason = reason } : ReportFailureAmplitude) = amplitude
       // TODO give proper feedback
       Logger.error reason
+      well
+    );
+    
+    tide<NewDuelAmplitude> newDuelLocation (fun amplitude well ->
+      NewDuelMould.export (newDuelLocation, amplitude)
+      |> upstream
       well
     );
     
@@ -102,16 +134,28 @@ module Tides =
       |> updatePiece t (fun _ -> Some piece)
     );
     
+    tide<SelectClientTileAmplitude> selectClientTileLocation (fun amplitude well ->
+      let ({ Coordinate = coord } : SelectClientTileAmplitude) = amplitude
+      well
+      |> Pool.findClientDuelist
+      <!> (fun d ->
+        SelectTileMould.export (selectTileLocation, { Player = d.Color; Coordinate = coord })
+        |> upstream    
+        
+        Pool.deselect d.Color well
+        |> updateTile coord (fun t -> { t with SelectedBy = Some d.Color })
+      )
+      |> Option.defaultValue well
+    );   
+     
     tide<SelectTileAmplitude> selectTileLocation (fun amplitude well ->
       let ({ Player = playerColor; Coordinate = coord } : SelectTileAmplitude) = amplitude
-      updateTile coord (fun t -> { t with SelectedBy = Some playerColor }) well
+      Pool.deselect playerColor well
+      |> updateTile coord (fun t -> { t with SelectedBy = Some playerColor })
     );
     
     tide<DeselectTileAmplitude> deselectTileLocation (fun amplitude well ->
       let ({ Player = playerColor } : DeselectTileAmplitude) = amplitude
-      updateTiles (Matrix.updateWhere
-        (fun t -> t.SelectedBy = Some playerColor)
-        (fun t -> { t with SelectedBy = None }))
-        well
+      Pool.deselect playerColor well
     );  
   ]

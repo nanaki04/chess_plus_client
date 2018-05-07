@@ -24,11 +24,18 @@ type Board = {
 type Duel = {
   Duelists : list<Duelist>;
   Board : Board;
+  Rules : Rules;
+}
+
+type Connection = {
+  Tcp : bool;
+  Udp : bool;
 }
 
 type LifeWell = {
-  Player : Player;
+  Player : Option<Player>;
   Duel : Option<Duel>;
+  Connection : Connection;
 }
   
 module Well =
@@ -84,29 +91,51 @@ module Well =
         Name = "";
         Color = White;
       }
+      
+  module Rules =
+    let create rules = rules
+    
+    let initial = Map.empty
    
   module Duel =
-    let create duelists board =
+    let create duelists board rules =
       {
         Duelists = duelists;
         Board = board;
+        Rules = rules;
       }
       
     let initial =
       {
         Duelists = [];
         Board = Board.initial;
+        Rules = Rules.initial;
       }
       
-  module LifeWell =
-    let create player duel =
+  module Connection =
+    let create tcp udp =
       {
-        Player = player;
-        Duel = duel;
+        Tcp = tcp;
+        Udp = udp;
       }
       
     let initial =
       {
-        Player = Player.initial;
+        Tcp = false;
+        Udp = false;
+      }
+      
+  module LifeWell =
+    let create player duel connection =
+      {
+        Player = player;
+        Duel = duel;
+        Connection = connection;
+      }
+      
+    let initial =
+      {
+        Player = None;
         Duel = None;
+        Connection = Connection.initial;
       }

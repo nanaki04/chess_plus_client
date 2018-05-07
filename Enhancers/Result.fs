@@ -60,3 +60,16 @@ module Result =
     | Error e -> Error e
     
   let (<!>>) = fun v f -> v <!> f |> flatten
+  
+  let bind f v : Result<_, _> =
+    match v with
+    | Ok v -> f v
+    | Error e -> Error e
+    
+  let bindAndFlatten<'v> (f : 'v -> Result<_, _>) (v : Result<_, _>) =
+    bind f v
+    |> flatten
+    
+  let (>>=) = fun v f -> bind f v
+  
+  let (>>>=) = fun v f -> bindAndFlatten f v

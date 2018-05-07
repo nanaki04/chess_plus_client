@@ -58,13 +58,17 @@ type TileView () =
   inherit Presentation ()
       
   [<SerializeField>]
-  let mutable (image : Image) = null
+  let mutable image : Image = null
+  
+  [<SerializeField>]
+  let mutable pieceFactory : PieceFactoryView = Unchecked.defaultof<PieceFactoryView>
   
   let mutable coordinate = (One, A)
         
   let mutable unsubscribe = fun () -> ()
   
-  let changeColor { Color = color; SelectedBy = selectedBy; ConquerableBy = conquerableBy } =
+  let changeColor tile =
+    let { Color = color; SelectedBy = selectedBy; ConquerableBy = conquerableBy } = tile
     let maybeImage = image |> Nullable.toOption
     match maybeImage, conquerableBy, selectedBy with
     | Some img, None, None ->
@@ -75,21 +79,27 @@ type TileView () =
       img.color <- TileViewDefinitions.selectedColors.[playerColor].[color]
     | _, _, _ ->
       ()
+    tile
+      
+  let spawnPiece tile =
+    let ({ Piece = piece } : Tile) = tile 
+    Nullable.toResult pieceFactory
+    <!> (fun fact -> fact.Spawn piece coordinate)
+    <!!> Logger.warn
+    tile
 
   member m.OnTileChange (tile : Option<Tile>) _ =
     tile
-    |> Option.map changeColor
-    |> Option.orElseWith (fun () -> Some (GameObject.Destroy(m)))
-    |> ignore
+    |> Option.map m.UpdateTile
+    |> Option.orFinally (fun () -> GameObject.Destroy(m))
+    
+  member m.UpdateTile (tile : Tile) =
+    tile
+    |> changeColor
+    |> spawnPiece
     
   member m.OnClick () =
-    flow <| deselectTileWave (DeselectTileAmplitude {
-      Player = White;
-    })
-    <!!> Logger.warn
-    
-    flow <| selectTileWave (SelectTileAmplitude {
-      Player = White;
+    flow <| selectClientTileWave (SelectClientTileAmplitude {
       Coordinate = coordinate;
     })
     <!!> Logger.warn
@@ -97,14 +107,11 @@ type TileView () =
   override m.Start () =
     base.Start () 
     
-  member m.Init row column color =
+  member m.Init row column tile =
     coordinate <- (row, column)
     unsubscribe <- observeTile (row, column) m.OnTileChange
-    flow <| addTileWave (AddTileAmplitude {
-      Coordinate = (row, column);
-      Tile = Tile.create color None None None;
-    })
-    <!!> Logger.warn
+    m.UpdateTile tile
+    |> ignore
     m
     
   override m.OnDestroy () =

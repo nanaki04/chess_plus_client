@@ -5,9 +5,9 @@ module Udp =
   open System.Net
   open System.Text
 
-  let client = new UdpClient (4000)
+  let client = new UdpClient (5000)
   let ip = IPAddress.Parse("127.0.0.1")
-  let server = new IPEndPoint (ip, 5000)
+  let server = new IPEndPoint (ip, 1337)
   let incomingEndpoint = new IPEndPoint (IPAddress.Any, 0)
   
   let connect () =

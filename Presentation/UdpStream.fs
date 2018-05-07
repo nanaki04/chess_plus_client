@@ -23,10 +23,16 @@ type UdpStreamView () =
   override m.Start () =
     base.Start ()
     connect ()
+    
     listen (fun msg ->
       messages <- Seq.skip readUntil messages |> Seq.append [msg]
       readUntil <- 0
     )
+    
+    flow <| updateUdpConnectionWave (UpdateUdpConnectionAmplitude {
+      Connected = true;
+    })
+    <!!> Logger.warn
   
   override m.Update () =
     base.Update ()
@@ -42,4 +48,10 @@ type UdpStreamView () =
    
   override m.OnDestroy () =
     base.OnDestroy ()
+    
+    flow <| updateUdpConnectionWave (UpdateUdpConnectionAmplitude {
+      Connected = false;
+    })
+    <!!> Logger.warn
+    
     disconnect ()

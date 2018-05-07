@@ -3,6 +3,10 @@
 type Matrix<'r, 'c, 'v when 'r : comparison and 'c : comparison> = Map<'r, Map<'c, 'v>>
 
 module Matrix =
+  open System.Collections.Generic
+  
+  let empty = Map.empty
+
   let retn r c v =
     Map.empty.Add(
       r,
@@ -13,7 +17,7 @@ module Matrix =
     m
     |> Map.tryFind r
     |> function
-      | None -> retn r c v
+      | None -> m.Add(r, Map.empty.Add(c, v))
       | Some row -> m.Add(r, row.Add(c, v))
 
   let private mapColumns f cols =
@@ -25,14 +29,16 @@ module Matrix =
   let map f m =
     mapRows f m
     
-  let private foldColumns<'c, 'v, 's when 'c : comparison> f (s : 's) r (cols : Map<'c, 'v>) =
+  let mapRC f m =
+    Map.map (fun r cols ->
+      Map.map (fun c item -> f r c item) cols
+    ) m
+    
+  let private foldColumns f s r cols =
     Map.fold (fun state c v -> f s r c v) s cols
     
-  let private foldRows f s rows =
-    Map.fold (fun state row cols -> foldColumns f state row cols) rows
-    
   let fold f s m =
-    foldRows f s m
+    Map.fold (fun state row cols -> foldColumns f state row cols) s m
     
   let tryFind r c m =
     m
@@ -66,3 +72,13 @@ module Matrix =
     map (fun v ->
       if p v then f v else v
     ) m
+    
+  let fromDict<'r, 'c, 't when 'r : comparison and 'c : comparison> (d : IDictionary<'r, IDictionary<'c, 't>>) =
+    d
+    |> Seq.map (|KeyValue|)
+    |> Map.ofSeq
+    |> Map.map (fun _ (v : IDictionary<'c, 't>) ->
+       Seq.map (|KeyValue|) v
+       |> Map.ofSeq
+    )
+      
