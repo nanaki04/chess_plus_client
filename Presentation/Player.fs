@@ -20,6 +20,9 @@ type PlayerView () =
   member m.OnPlayerChange player _ =
     player
     |> Option.map (fun _ ->
+//      flow <| joinDuelWave (JoinDuelAmplitude {
+//       ID = "127.0.0.1:5000"
+//      })
       flow <| newDuelWave (NewDuelAmplitude {
         Map = Classic;
       })

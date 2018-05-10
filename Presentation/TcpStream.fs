@@ -12,6 +12,7 @@ type TcpStreamView () =
   inherit Presentation ()
   
   let mutable messages = Seq.empty
+  let mutable state = Waiting
     
   override m.Start () =
     base.Start ()
@@ -23,20 +24,31 @@ type TcpStreamView () =
   
   override m.Update () =
     base.Update ()
-    agent.Post (fun state ->
-      state.Split '\n'
-      |> Array.toSeq
-      |> (fun msgList ->
-        messages <- Seq.take (Seq.length msgList - 1) msgList
-        Seq.reduce (fun _ x -> x) msgList
-      )
-    )
     
-    Seq.map (Moulds.import) messages
-    |> Seq.map (Result.map flow >> Result.flatten)
-    |> Seq.toList
-    |> Result.unwrap
-    <!!> Logger.warn
+    match state with
+    | Waiting ->
+      state <- Receiving
+      agent.Post (fun newMessages ->
+        state <- Executing
+        newMessages.Split '\n'
+        |> Array.toSeq
+        |> (fun msgList ->
+          messages <- Seq.take (Seq.length msgList - 1) msgList
+          Seq.reduce (fun _ x -> x) msgList
+        )
+      )
+    | Executing ->
+      Seq.iter Logger.log messages
+      
+      Seq.map (Moulds.import) messages
+      |> Seq.map (Result.map flow >> Result.flatten)
+      |> Seq.toList
+      |> Result.unwrap
+      <!!> Logger.warn
+      
+      state <- Waiting
+    | Receiving ->
+      ()
    
   override m.OnDestroy () =
     base.OnDestroy ()

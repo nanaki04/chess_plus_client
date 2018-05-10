@@ -238,15 +238,11 @@ module Moulds =
         
   type JoinDuelMould () =
     let mutable location = Unchecked.defaultof<LocationMould>
-    let mutable player = Unchecked.defaultof<PlayerDto>
     let mutable id = null
 
     member m.Location
       with get() = location
-      and set(v) = location <- v    
-    member m.Player
-      with get() = player
-      and set(v) = player <- v    
+      and set(v) = location <- v  
     member m.ID
       with get() = id
       and set(v) = id <- v
@@ -255,18 +251,15 @@ module Moulds =
       let (loc, ampl : JoinDuelAmplitude) = wave
       let m = new JoinDuelMould ()
       m.Location <- LocationMould.export loc
-      m.Player <- ampl.Player |> PlayerDto.export
       m.ID <- ampl.ID
       m
     
     interface Importable with
       member m.import () =
-        Ok (fun player id ->
+        Ok (fun id ->
           JoinDuelAmplitude {
-            Player = player;
             ID = id;
           })
-        <*> PlayerDto.import m.Player
         <*> Nullable.toResult m.ID
         <!> addDuelistWave 
       
@@ -500,8 +493,54 @@ module Moulds =
         <*> ColorDto.import m.Player
         <*> CoordinateDto.import m.Coordinate
         <!> selectTileWave
-  
+        
+  type SelectClientTileMould () =
+    let mutable location = Unchecked.defaultof<LocationMould>
+    let mutable coordinate = Unchecked.defaultof<CoordinateDto>
+    
+    member m.Location
+      with get() = location
+      and set(v) = location <- v  
+    member m.Coordinate
+      with get() = coordinate
+      and set(v) = coordinate <- v     
+    
+    static member export (wave) =
+      let (loc, ampl : SelectClientTileAmplitude) = wave
+      let m = new SelectClientTileMould ()
+      m.Location <- LocationMould.export loc
+      m.Coordinate <- ampl.Coordinate |> CoordinateDto.export
+      m
+
+    interface Importable with
+      member m.import () =
+        Ok (fun coord ->
+          SelectClientTileAmplitude {
+            Coordinate = coord;
+          })
+        <*> CoordinateDto.import m.Coordinate
+        <!> selectTileWave
+          
   type DeselectTileMould () =
+    let mutable location = Unchecked.defaultof<LocationMould>
+
+    member m.Location
+      with get() = location
+      and set(v) = location <- v 
+      
+    static member export (wave) =
+      let (loc, _ : DefaultAmplitude) = wave
+      let m = new DeselectTileMould ()
+      m.Location <- LocationMould.export loc
+      m
+
+    interface Importable with
+      member m.import () =
+        DefaultAmplitude ()
+        |> deselectTileWave
+        |> Ok
+        
+  type ConfirmDeselectTileMould () =
     let mutable location = Unchecked.defaultof<LocationMould>
     let mutable player = Unchecked.defaultof<ColorDto>
 
@@ -513,8 +552,8 @@ module Moulds =
       and set(v) = player <- v
       
     static member export (wave) =
-      let (loc, ampl : DeselectTileAmplitude) = wave
-      let m = new DeselectTileMould ()
+      let (loc, ampl : ConfirmDeselectTileAmplitude) = wave
+      let m = new ConfirmDeselectTileMould ()
       m.Location <- LocationMould.export loc
       m.Player <- ampl.Player |> ColorDto.export
       m
@@ -522,12 +561,12 @@ module Moulds =
     interface Importable with
       member m.import () =
         Ok (fun player ->
-          DeselectTileAmplitude {
+          ConfirmDeselectTileAmplitude {
             Player = player;
           })
         <*> ColorDto.import m.Player
-        <!> deselectTileWave
-        
+        <!> confirmDeselectTileWave
+                
   let inline make<'t when 't :> Importable> mould  =
     JsonConversions.import<'t> mould <!>> fun (m : 't) -> (m :> Importable).import ()    
         
@@ -544,11 +583,7 @@ module Moulds =
     | l when l = loginLocation -> make<LoginMould> mould
     | l when l = confirmLoginLocation -> make<ConfirmLoginMould> mould
     | l when l = reportFailureLocation -> make<ReportFailureMould> mould
-    | l when l = startDuelLocation ->
-      Logger.log "HANDLE START DUEL MOULD"
-      let result = make<StartDuelMould> mould
-      Logger.log result
-      result
+    | l when l = startDuelLocation -> make<StartDuelMould> mould
     | l when l = joinDuelLocation -> make<JoinDuelMould> mould
     | l when l = addDuelistLocation -> make<AddDuelistMould> mould
     | l when l = setupBoardLocation -> make<SetupBoardMould> mould
@@ -557,6 +592,8 @@ module Moulds =
     | l when l = movePieceLocation -> make<MovePieceMould> mould
     | l when l = conquerTileLocation -> make<ConquerTileMould> mould
     | l when l = selectTileLocation -> make<SelectTileMould> mould
+    | l when l = selectClientTileLocation -> make<SelectClientTileMould> mould
     | l when l = deselectTileLocation -> make<DeselectTileMould> mould
+    | l when l = confirmDeselectTileLocation -> make<ConfirmDeselectTileMould> mould
     | l -> Error ("Wave location not found: " + (Tuple.fst l).ToString() + ", " + (Tuple.snd l).ToString())
     

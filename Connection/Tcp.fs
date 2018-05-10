@@ -6,6 +6,7 @@ module Tcp =
   open System.Net
   open System.Text
 
+  //let client = new TcpClient("192.168.13.211", 1338)
   let client = new TcpClient("127.0.0.1", 1338)
   let stream = client.GetStream ()
   

@@ -23,6 +23,7 @@ module Observers =
     |> guard
     
   let observeTile coord (react : Option<Tile> -> LifeWell -> unit) =
+    let (row, col) = coord
     watcher (findTile coord) react
     |> guard
     

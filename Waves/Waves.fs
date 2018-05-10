@@ -48,7 +48,7 @@ module Waves =
   let startDuelLocation = ("duel", "add")
   let startDuelWave amplitude = (startDuelLocation, amplitude)
   
-  type JoinDuelAmplitude = { Player : Player; ID : string }
+  type JoinDuelAmplitude = { ID : string }
   let joinDuelLocation = ("duelist", "join")
   let joinDuelWave amplitude = (joinDuelLocation, amplitude)
   
@@ -83,10 +83,13 @@ module Waves =
   type SelectClientTileAmplitude = { Coordinate : Coordinate }
   let selectClientTileLocation = ("tile", "select")
   let selectClientTileWave amplitude = (selectClientTileLocation, amplitude)
-  
-  type DeselectTileAmplitude = { Player : Color }
+
   let deselectTileLocation = ("tile", "deselect")
   let deselectTileWave amplitude = (deselectTileLocation, amplitude)
+  
+  type ConfirmDeselectTileAmplitude = { Player : Color }
+  let confirmDeselectTileLocation = ("tile", "confirm_deselect")
+  let confirmDeselectTileWave amplitude = (confirmDeselectTileLocation, amplitude)
 
   type Amplitude =
   | DefaultAmplitude of DefaultAmplitude
@@ -109,5 +112,5 @@ module Waves =
   | ConquerTileAmplitude of ConquerTileAmplitude
   | SelectClientTileAmplitude of SelectClientTileAmplitude
   | SelectTileAmplitude of SelectTileAmplitude
-  | DeselectTileAmplitude of DeselectTileAmplitude
+  | ConfirmDeselectTileAmplitude of ConfirmDeselectTileAmplitude
   

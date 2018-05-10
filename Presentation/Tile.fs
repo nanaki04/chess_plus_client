@@ -68,6 +68,7 @@ type TileView () =
   let mutable unsubscribe = fun () -> ()
   
   let changeColor tile =
+    Logger.log "changeColor"
     let { Color = color; SelectedBy = selectedBy; ConquerableBy = conquerableBy } = tile
     let maybeImage = image |> Nullable.toOption
     match maybeImage, conquerableBy, selectedBy with
@@ -76,6 +77,7 @@ type TileView () =
     | Some img, Some playerColor, _ ->
       img.color <- TileViewDefinitions.conquerableColors.[playerColor].[color]
     | Some img, None, Some playerColor ->
+      Logger.log "change color by selected"
       img.color <- TileViewDefinitions.selectedColors.[playerColor].[color]
     | _, _, _ ->
       ()
@@ -89,6 +91,7 @@ type TileView () =
     tile
 
   member m.OnTileChange (tile : Option<Tile>) _ =
+    Logger.log "onTileChange"
     tile
     |> Option.map m.UpdateTile
     |> Option.orFinally (fun () -> GameObject.Destroy(m))
@@ -106,10 +109,10 @@ type TileView () =
     
   override m.Start () =
     base.Start () 
+    unsubscribe <- observeTile coordinate m.OnTileChange
     
   member m.Init row column tile =
     coordinate <- (row, column)
-    unsubscribe <- observeTile (row, column) m.OnTileChange
     m.UpdateTile tile
     |> ignore
     m

@@ -122,6 +122,11 @@ type Pieces =
 type Territory =
 | Classic
 
+type StreamState =
+| Waiting
+| Receiving
+| Executing
+
 module Types =
   module Column =
     let fromInt x =

@@ -17,17 +17,12 @@ open System.Collections
 type UdpStreamView () =
   inherit Presentation ()
   
-  let mutable messages = Seq.empty
-  let mutable readUntil = 0
+  let mutable messages = []
+  let mutable state = Waiting
     
   override m.Start () =
     base.Start ()
     connect ()
-    
-    listen (fun msg ->
-      messages <- Seq.skip readUntil messages |> Seq.append [msg]
-      readUntil <- 0
-    )
     
     flow <| updateUdpConnectionWave (UpdateUdpConnectionAmplitude {
       Connected = true;
@@ -36,15 +31,28 @@ type UdpStreamView () =
   
   override m.Update () =
     base.Update ()
-    Seq.iter Logger.log (Seq.skip readUntil messages)
     
-    Seq.map (Moulds.import) (Seq.skip readUntil messages)
-    |> Seq.map (Result.map flow >> Result.flatten)
-    |> Seq.toList
-    |> Result.unwrap
-    <!!> Logger.warn
-    
-    readUntil <- Seq.length messages
+    match state with
+    | Waiting ->
+      state <- Receiving
+      agent.Post (fun newMessages ->
+        messages <- newMessages
+        state <- Executing
+        []
+      )
+    | Executing ->
+      List.iter Logger.log messages
+      
+      messages
+      |> List.rev
+      |> List.map (Moulds.import)
+      |> List.map (Result.map flow >> Result.flatten)
+      |> Result.unwrap
+      <!!> Logger.warn
+      
+      state <- Waiting
+    | Receiving ->
+      ()
    
   override m.OnDestroy () =
     base.OnDestroy ()

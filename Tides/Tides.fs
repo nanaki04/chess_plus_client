@@ -74,6 +74,11 @@ module Tides =
       let ({ Reason = reason } : ReportFailureAmplitude) = amplitude
       // TODO give proper feedback
       Logger.error reason
+      
+      // TODO TEMP
+      JoinDuelMould.export (joinDuelLocation, { ID = "192.168.13.235:5000" })
+      |> upstream
+      
       well
     );
     
@@ -88,14 +93,10 @@ module Tides =
       updateDuel (fun _ -> Some duel) well
     );
     
-    // TODO send to server
     tide<JoinDuelAmplitude> joinDuelLocation (fun amplitude well ->
-      let ({ Player = player; ID = id } : JoinDuelAmplitude) = amplitude
-      updateDuelists (fun lst ->
-        let color = if lst.Length % 2 = 0 then White else Black
-        { Name = player.Name; Color = color }::lst
-        |> List.rev
-      ) well
+      JoinDuelMould.export (joinDuelLocation, amplitude)
+      |> upstream
+      well
     );
     
     tide<AddDuelistAmplitude> addDuelistLocation (fun amplitude well ->
@@ -135,17 +136,20 @@ module Tides =
     );
     
     tide<SelectClientTileAmplitude> selectClientTileLocation (fun amplitude well ->
-      let ({ Coordinate = coord } : SelectClientTileAmplitude) = amplitude
+      SelectClientTileMould.export (selectClientTileLocation, amplitude)
+      |> upstream
       well
-      |> Pool.findClientDuelist
-      <!> (fun d ->
-        SelectTileMould.export (selectTileLocation, { Player = d.Color; Coordinate = coord })
-        |> upstream    
-        
-        Pool.deselect d.Color well
-        |> updateTile coord (fun t -> { t with SelectedBy = Some d.Color })
-      )
-      |> Option.defaultValue well
+//      let ({ Coordinate = coord } : SelectClientTileAmplitude) = amplitude
+//      well
+//      |> Pool.findClientDuelist
+//      <!> (fun d ->
+//        SelectTileMould.export (selectTileLocation, { Player = d.Color; Coordinate = coord })
+//        |> upstream    
+//        
+//        Pool.deselect d.Color well
+//        |> updateTile coord (fun t -> { t with SelectedBy = Some d.Color })
+//      )
+//      |> Option.defaultValue well
     );   
      
     tide<SelectTileAmplitude> selectTileLocation (fun amplitude well ->
@@ -154,8 +158,14 @@ module Tides =
       |> updateTile coord (fun t -> { t with SelectedBy = Some playerColor })
     );
     
-    tide<DeselectTileAmplitude> deselectTileLocation (fun amplitude well ->
-      let ({ Player = playerColor } : DeselectTileAmplitude) = amplitude
+    tide<DefaultAmplitude> deselectTileLocation (fun amplitude well ->
+      DeselectTileMould.export (deselectTileLocation, amplitude)
+      |> upstream    
+      well
+    );    
+    
+    tide<ConfirmDeselectTileAmplitude> confirmDeselectTileLocation (fun amplitude well ->
+      let ({ Player = playerColor } : ConfirmDeselectTileAmplitude) = amplitude
       Pool.deselect playerColor well
     );  
   ]
