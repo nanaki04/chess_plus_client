@@ -36,10 +36,7 @@ module Tides =
     
     // TODO request player info from player
     tide<DefaultAmplitude> requireLoginLocation (fun () well ->
-      let amplitude : LoginAmplitude = { Name = "Sheep" }
-      LoginMould.export (loginLocation, amplitude)
-      |> upstream
-      well
+      Pool.openPopup Login well
     );
     
     tide<PlayerCreatedAmplitude> playerCreatedLocation (fun amplitude well ->
@@ -167,5 +164,29 @@ module Tides =
     tide<ConfirmDeselectTileAmplitude> confirmDeselectTileLocation (fun amplitude well ->
       let ({ Player = playerColor } : ConfirmDeselectTileAmplitude) = amplitude
       Pool.deselect playerColor well
-    );  
+    );
+    
+    tide<OpenPopupAmplitude> openPopupLocation (fun amplitude well ->
+      Pool.openPopup amplitude.Popup well
+    );
+    
+    tide<ClosePopupAmplitude> closePopupLocation (fun amplitude well ->
+      Pool.closePopup amplitude.Popup well
+    );
+    
+    tide<DefaultAmplitude> loginPopupClickOkLocation (fun amplitude well ->
+      let name =
+        findLoginPopupState well
+        |> fun (s : LoginPopupState) -> s.Name
+        
+      let amplitude : LoginAmplitude = { Name = name }
+      LoginMould.export (loginLocation, amplitude)
+      |> upstream
+      
+      Pool.closePopup Login well
+    );
+    
+    tide<TextAmplitude> loginPopupNameChangeLocation (fun amplitude well ->
+      updateLoginPopupState (fun s -> { s with Name = amplitude.Text }) well
+    );
   ]

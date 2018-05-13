@@ -32,10 +32,24 @@ type Connection = {
   Udp : bool;
 }
 
+type LoginPopupState = {
+  Name : string;
+}
+
+type PopupStates = {
+  LoginPopupState : LoginPopupState;
+}
+
+type Ui = {
+  Popups : Popup list;
+  PopupStates : PopupStates;
+}
+
 type LifeWell = {
   Player : Option<Player>;
   Duel : Option<Duel>;
   Connection : Connection;
+  Ui : Ui;
 }
   
 module Well =
@@ -125,12 +139,50 @@ module Well =
         Udp = false;
       }
       
+  module LoginPopupState =
+    let create name =
+      {
+        Name = name;
+      }
+      
+    let initial =
+      {
+        Name = "";
+      }
+      
+  module PopupStates =
+    let create
+      loginPopupState
+      =
+        {
+          LoginPopupState = loginPopupState;
+        }
+  
+    let initial =
+      {
+        LoginPopupState = LoginPopupState.initial;
+      }
+      
+  module Ui =
+    let create popups popupStates =
+      {
+        Popups = popups;
+        PopupStates = popupStates;
+      }
+      
+    let initial =
+      {
+        Popups = [];
+        PopupStates = PopupStates.initial;
+      }
+      
   module LifeWell =
-    let create player duel connection =
+    let create player duel connection ui =
       {
         Player = player;
         Duel = duel;
         Connection = connection;
+        Ui = ui;
       }
       
     let initial =
@@ -138,4 +190,5 @@ module Well =
         Player = None;
         Duel = None;
         Connection = Connection.initial;
+        Ui = Ui.initial;
       }

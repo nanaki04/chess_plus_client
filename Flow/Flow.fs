@@ -6,22 +6,36 @@ module Flow =
   open Tides
   open WellLogger
   
-  let mutable private maelstrom = invoke LifeWell.initial tides List.empty [wellLogger]
+  type Wave = ((string * string) * Maelstrom.Amplitude<Maelstrom.Amplitude<Waves.Amplitude>>)
   
-  let flow wave =
-    Logger.log "HANDLE WAVE"
-    Logger.log (JsonConversions.export (Moulds.LocationMould.export (Tuple.fst wave)))
-    maelstrom <- flow wave maelstrom
-//    Logger.log "FLOW REFLECTIONS"
-//    List.map (fun refl ->
-//      Logger.log refl
-//      refl
-//    ) maelstrom.reflection
-//    |> ignore
-    Ok ()
-    
-  let guard wellGuardian =
-    let (unguard, mstr) = guard wellGuardian maelstrom
-    maelstrom <- mstr
-    fun () ->
-      maelstrom <- unguard maelstrom
+  let (doFlow, guard) = invoke LifeWell.initial tides List.empty [wellLogger]
+  let flow wave = doFlow wave |> Ok
+  
+//  let mutable private queue : (unit -> unit) list = []
+//  
+//  let rec private next () =  
+//    if queue.Length > 0 then
+//      let command = List.head queue
+//      command ()
+//      queue <- List.tail queue
+//      next ()
+//    else
+//      Ok ()
+//      
+//  let enqueue command =
+//    queue <- command::(List.rev queue) |> List.rev
+//    if queue.Length = 1 then next () else Ok ()
+//            
+//  let flow wave =
+//    let command = fun () ->
+//      Logger.log "HANDLE WAVE"
+//      Logger.log (JsonConversions.export (Moulds.LocationMould.export (Tuple.fst wave)))
+//      maelstrom <- flow wave maelstrom
+//      
+//    enqueue command
+//    
+//  let guard wellGuardian =
+//    let (unguard, mstr) = guard wellGuardian maelstrom
+//    maelstrom <- mstr
+//    fun () ->
+//      maelstrom <- unguard maelstrom

@@ -64,6 +64,7 @@
     <Compile Include="Enhancers/Result.fs" />
     <Compile Include="Enhancers/Col.fs" />
     <Compile Include="Enhancers/Nullable.fs" />
+    <Compile Include="Enhancers/List.fs" />
     <Compile Include="Enhancers/Map.fs" />
     <Compile Include="Enhancers/Option.fs" />
     <Compile Include="Enhancers/Tuple.fs" />
@@ -73,6 +74,7 @@
     <Compile Include="Types.fs" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="ChessPlus.fs" />
+    <Compile Include="Ui/Popup.fs" />
     <Compile Include="State/Well.fs" />
     <Compile Include="State/Finders.fs" />
     <Compile Include="State/Updaters.fs" />
@@ -86,6 +88,10 @@
     <Compile Include="Flow/Observers.fs" />
     <Compile Include="Presentation/Adapters.fs" />
     <Compile Include="Presentation/Presentation.fs" />
+    <Compile Include="Presentation/DomainRoot.fs" />
+    <Compile Include="Presentation/Button.fs" />
+    <Compile Include="Presentation/Input.fs" />
+    <Compile Include="Presentation/Popups.fs" />
     <Compile Include="Presentation/Piece.fs" />
     <Compile Include="Presentation/PieceFactory.fs" />
     <Compile Include="Presentation/Tile.fs" />

@@ -19,7 +19,7 @@ module PieceViewDefinitions =
   let baseColors =
     Map.empty
       .Add(White, rgb 255 255 255)
-      .Add(Black, rgb 0 0 0)
+      .Add(Black, rgb 40 30 20)
             
 type PieceView () =
   inherit Presentation ()
@@ -38,7 +38,7 @@ type PieceView () =
     <!!> Logger.warn
     piece
   
-  member m.OnPieceChange piece _ =
+  member m.OnPieceChange piece =
     piece
     |> changeColor
     |> ignore
@@ -48,11 +48,13 @@ type PieceView () =
     
   member m.Init piece coord =
     coordinate <- coord
+    m.OnPieceChange piece
     unsubscribe <- observePiece coord (fun p _ ->
       Option.map (Types.Pieces.map m.OnPieceChange) p
       |> ignore
     )
     m
+    
     
   override m.OnDestroy () =
     base.OnDestroy ()

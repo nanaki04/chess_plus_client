@@ -31,6 +31,10 @@ module Observers =
     watcher (findPiece coord) react
     |> guard
     
+  let observePopups (react : Popup list -> LifeWell -> unit) =
+    watcher findPopups react
+    |> guard
+    
   let observe (react : LifeWell -> unit) =
     watcher find (fun well _ -> react well)
     |> guard

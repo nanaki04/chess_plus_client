@@ -35,7 +35,7 @@ type PieceFactoryView () =
     _piece <- piece
     
     piece.GetComponent<PieceView> ()
-    |> fun (p : PieceView) -> p.Init (piece, coord)
+    |> fun (p : PieceView) -> p.Init data coord
     |> ignore
    
   override m.Start () =

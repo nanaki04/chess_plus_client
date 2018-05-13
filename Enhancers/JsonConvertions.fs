@@ -169,13 +169,46 @@ module DtoTypes =
     Tcp : bool;
     Udp : bool;
   }
-  type LifeWellDto (player, duel, connection) =
+  type PopupDto = string
+  
+  type LoginPopupStateDto () =
+    let mutable name = null
+    
+    member m.Name
+      with get () = name
+      and set (v) = name <- v
+      
+  type PopupStatesDto () =
+    let mutable loginPopupState = Unchecked.defaultof<LoginPopupStateDto>
+    
+    member m.LoginPopupState
+      with get () = loginPopupState
+      and set (v) = loginPopupState <- v
+  
+  type UiDto () =
+    let mutable popups = Array.empty;
+    let mutable popupStates = Unchecked.defaultof<PopupStatesDto>
+    
+    member m.Popups
+      with get () = popups
+      and set (v) = popups <- v
+    member m.PopupStates
+      with get () = popupStates
+      and set (v) = popupStates <- v
+    
+  type LifeWellDto (player, duel, connection, ui) =
     let mutable player = player
     let mutable duel = duel
     let mutable connection = connection
+    let mutable ui = ui
   
     new () =
-      LifeWellDto (Unchecked.defaultof<PlayerDto>, Unchecked.defaultof<DuelDto>, Unchecked.defaultof<ConnectionDto>)
+      LifeWellDto (
+        Unchecked.defaultof<PlayerDto>,
+        Unchecked.defaultof<DuelDto>,
+        Unchecked.defaultof<ConnectionDto>,
+        Unchecked.defaultof<UiDto>
+      )
     member m.Player
       with get () = player
       and set (v) = player <- v
@@ -185,6 +218,9 @@ module DtoTypes =
     member m.Connection
       with get () = connection
       and set (v) = connection <- v
+    member m.Ui
+      with get () = ui
+      and set (v) = ui <- v
 
 module JsonConversions =
   open Types
@@ -642,6 +678,50 @@ module JsonConversions =
         Udp = connection.Udp;
       }
       
+  module PopupDto =
+    let export (popup : Popup) =
+      match popup with
+      | Login -> "Login"
+      | PlayDuel -> "PlayDuel"
+      
+    let import (popup : PopupDto) =
+      match popup with
+      | "Login" -> Ok Login
+      | "PlayDuel" -> Ok PlayDuel
+      | d -> Error ("No such popup: " + d)
+      
+  module LoginPopupStateDto =
+    let export (loginPopupState : LoginPopupState) =
+      let dto = new LoginPopupStateDto ()
+      dto.Name <- loginPopupState.Name
+      dto
+      
+    let import (loginPopupState : LoginPopupStateDto) =
+      Ok LoginPopupState.create
+      <*> Nullable.toResult loginPopupState.Name
+      
+  module PopupStatesDto =
+    let export (popupStates : PopupStates) =
+      let dto = new PopupStatesDto ()
+      dto.LoginPopupState <- LoginPopupStateDto.export popupStates.LoginPopupState
+      dto
+      
+    let import (popupStates : PopupStatesDto) =
+      Ok PopupStates.create
+      <*> LoginPopupStateDto.import popupStates.LoginPopupState    
+      
+  module UiDto =
+    let export (ui : Ui) =
+      let dto = new UiDto ()
+      dto.Popups <- List.map PopupDto.export ui.Popups |> List.toArray
+      dto.PopupStates <- PopupStatesDto.export ui.PopupStates
+      dto
+      
+    let import (ui : UiDto) =
+      Ok Ui.create
+      <*> (ui.Popups |> (List.ofArray >> List.map PopupDto.import >> Result.unwrap))
+      <*> PopupStatesDto.import ui.PopupStates
+      
   module LifeWellDto =
     let export (lifewell : LifeWell) =
       let duel =
@@ -652,7 +732,12 @@ module JsonConversions =
         match lifewell.Player with
         | Some player -> PlayerDto.export player
         | _ -> Unchecked.defaultof<PlayerDto>
-      new LifeWellDto (player, duel, ConnectionDto.export lifewell.Connection)
+      new LifeWellDto (
+        player,
+        duel,
+        ConnectionDto.export lifewell.Connection,
+        UiDto.export lifewell.Ui
+      )
       
     let import (lifewell : LifeWellDto) =
       let duel =
@@ -668,3 +753,4 @@ module JsonConversions =
       <*> player
       <*> duel
       <*> ConnectionDto.import lifewell.Connection
+      <*> UiDto.import lifewell.Ui

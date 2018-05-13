@@ -45,3 +45,21 @@ module Finders =
   let findPiece coords lifeWell =
     findTile coords lifeWell
     >>= fun t -> t.Piece
+    
+  let findUi lifeWell =
+    lifeWell.Ui
+    
+  let findPopups lifeWell =
+    lifeWell
+    |> findUi
+    |> fun ui -> ui.Popups
+    
+  let findPopupStates lifeWell =
+    lifeWell
+    |> findUi
+    |> fun ui -> ui.PopupStates
+    
+  let findLoginPopupState lifeWell =
+    lifeWell
+    |> findPopupStates
+    |> fun states -> states.LoginPopupState

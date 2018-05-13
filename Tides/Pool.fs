@@ -20,3 +20,11 @@ module Pool =
       List.tryFind (fun (d : Duelist) -> d.Name = player.Name) duelists
     | _, _ ->
       None
+      
+  let openPopup popup well =
+    updatePopups (fun popups -> popup::popups) well
+    
+  let closePopup popup well =
+    updatePopups (fun popups ->
+      List.filter (fun p -> p <> popup) popups
+    ) well

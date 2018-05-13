@@ -73,6 +73,7 @@ type TileView () =
     let maybeImage = image |> Nullable.toOption
     match maybeImage, conquerableBy, selectedBy with
     | Some img, None, None ->
+      Logger.log "change color by deselected"
       img.color <- TileViewDefinitions.baseColors.[color]
     | Some img, Some playerColor, _ ->
       img.color <- TileViewDefinitions.conquerableColors.[playerColor].[color]

@@ -48,3 +48,18 @@ module Updaters =
   let updatePiece coord updater well =
     well
     |> updateTile coord (fun t -> { t with Piece = updater t.Piece })
+    
+  let updateUi updater well =
+    { well with Ui = updater well.Ui }
+    
+  let updatePopups updater well =
+    well
+    |> updateUi (fun ui -> { ui with Popups = updater ui.Popups })
+
+  let updatePopupStates updater well =
+    well
+    |> updateUi (fun ui -> { ui with PopupStates = updater ui.PopupStates })
+    
+  let updateLoginPopupState updater well =
+    well
+    |> updatePopupStates (fun s -> { s with LoginPopupState = updater s.LoginPopupState })

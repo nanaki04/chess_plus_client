@@ -4,6 +4,7 @@ module Waves =
   open Well
   
   type DefaultAmplitude = unit
+  type TextAmplitude = { Text : string }
   
   type UpdateTcpConnectionAmplitude = { Connected : bool }
   let updateTcpConnectionLocation = ("connection", "tcp")
@@ -91,8 +92,20 @@ module Waves =
   let confirmDeselectTileLocation = ("tile", "confirm_deselect")
   let confirmDeselectTileWave amplitude = (confirmDeselectTileLocation, amplitude)
 
+  type OpenPopupAmplitude = { Popup : Popup }
+  let openPopupLocation = ("popup", "open")
+  let openPopupWave amplitude = (openPopupLocation, amplitude)
+  
+  type ClosePopupAmplitude = { Popup : Popup }
+  let closePopupLocation = ("popup", "close")
+  let closePopupWave amplitude = (closePopupLocation, amplitude)
+  
+  let loginPopupNameChangeLocation = ("login_popup", "change_name_text")
+  let loginPopupClickOkLocation = ("login_popup", "click_ok")
+
   type Amplitude =
   | DefaultAmplitude of DefaultAmplitude
+  | TextAmplitude of TextAmplitude
   | UpdateTcpConnectionAmplitude of UpdateTcpConnectionAmplitude
   | UpdateUdpConnectionAmplitude of UpdateUdpConnectionAmplitude
   | AddTileAmplitude of AddTileAmplitude
@@ -113,4 +126,6 @@ module Waves =
   | SelectClientTileAmplitude of SelectClientTileAmplitude
   | SelectTileAmplitude of SelectTileAmplitude
   | ConfirmDeselectTileAmplitude of ConfirmDeselectTileAmplitude
+  | OpenPopupAmplitude of OpenPopupAmplitude
+  | ClosePopupAmplitude of ClosePopupAmplitude
   
