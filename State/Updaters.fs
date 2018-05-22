@@ -63,3 +63,19 @@ module Updaters =
   let updateLoginPopupState updater well =
     well
     |> updatePopupStates (fun s -> { s with LoginPopupState = updater s.LoginPopupState })
+    
+  let updateUiComponents updater well =
+    well
+    |> updateUi (fun ui -> { ui with Components = updater ui.Components })
+    
+  let updateUiComponent location (updater : Option<UiComponent> -> Option<UiComponent>) well =
+    let id = Types.Location.toString location
+    well
+    |> updateUiComponents (fun components ->
+      Map.tryFind id components
+      |> fun uiComponent -> updater uiComponent
+      |> Option.map (fun uiComponent -> Map.add id uiComponent components)
+      |> Option.defaultValue components
+    )
+    
+  

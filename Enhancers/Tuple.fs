@@ -24,5 +24,5 @@ module Tuple =
   
   let fromArray2 arr =
     match Array.length arr with
-    | 2 -> Ok (arr.[0], arr.[0])
+    | 2 -> Ok (arr.[0], arr.[1])
     | _ -> Error "Incorrect array length to create a tuple 2"

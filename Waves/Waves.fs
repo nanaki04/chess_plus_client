@@ -5,6 +5,7 @@ module Waves =
   
   type DefaultAmplitude = unit
   type TextAmplitude = { Text : string }
+  type UiComponentAmplitude = UiComponent
   
   type UpdateTcpConnectionAmplitude = { Connected : bool }
   let updateTcpConnectionLocation = ("connection", "tcp")
@@ -100,12 +101,24 @@ module Waves =
   let closePopupLocation = ("popup", "close")
   let closePopupWave amplitude = (closePopupLocation, amplitude)
   
+  let getOpenDuelsLocation = ("open_duels", "all")
+  
+  type AddOpenDuelsAmplitude = { Duels : string list }
+  let addOpenDuelsLocation = ("open_duels", "add")
+  let addOpenDuelsWave amplitude = (addOpenDuelsLocation, amplitude)
+  
   let loginPopupNameChangeLocation = ("login_popup", "change_name_text")
   let loginPopupClickOkLocation = ("login_popup", "click_ok")
+  
+  let playDuelPopupNewButtonLocation = ("play_duel_popup", "new_button")
+  let playDuelPopupJoinButtonLocation = ("play_duel_popup", "join_button")
+  let playDuelPopupClickJoinLocation = ("play_duel_popup", "click_join")
+  let playDuelPopupClickNewLocation = ("play_duel_popup", "click_new")
 
   type Amplitude =
   | DefaultAmplitude of DefaultAmplitude
   | TextAmplitude of TextAmplitude
+  | UiComponentAmplitude of UiComponentAmplitude
   | UpdateTcpConnectionAmplitude of UpdateTcpConnectionAmplitude
   | UpdateUdpConnectionAmplitude of UpdateUdpConnectionAmplitude
   | AddTileAmplitude of AddTileAmplitude
@@ -128,4 +141,5 @@ module Waves =
   | ConfirmDeselectTileAmplitude of ConfirmDeselectTileAmplitude
   | OpenPopupAmplitude of OpenPopupAmplitude
   | ClosePopupAmplitude of ClosePopupAmplitude
+  | AddOpenDuelsAmplitude of AddOpenDuelsAmplitude
   

@@ -5,10 +5,11 @@ module Flow =
   open Maelstrom.Mealstrom
   open Tides
   open WellLogger
+  open WaveLogger
   
   type Wave = ((string * string) * Maelstrom.Amplitude<Maelstrom.Amplitude<Waves.Amplitude>>)
   
-  let (doFlow, guard) = invoke LifeWell.initial tides List.empty [wellLogger]
+  let (doFlow, guard) = invoke LifeWell.initial tides [waveLogger] [wellLogger]
   let flow wave = doFlow wave |> Ok
   
 //  let mutable private queue : (unit -> unit) list = []

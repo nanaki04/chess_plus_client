@@ -43,8 +43,8 @@ type PopupsView () =
         
     openPopups <- Map.add popup obj openPopups
     
-  override m.Start () =
-    base.Start () 
+  override m.Awake () =
+    base.Awake () 
     unsubscribe <- observePopups m.OnPopupsChange
     
   override m.OnDestroy () =

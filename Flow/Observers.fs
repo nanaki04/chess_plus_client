@@ -35,6 +35,11 @@ module Observers =
     watcher findPopups react
     |> guard
     
+  let observeUiComponent location (react : Option<UiComponent> -> LifeWell -> unit) =
+    let id = Types.Location.toString location
+    watcher (findUiComponent id) react
+    |> guard
+    
   let observe (react : LifeWell -> unit) =
     watcher find (fun well _ -> react well)
     |> guard

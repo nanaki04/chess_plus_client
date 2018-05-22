@@ -2,11 +2,26 @@
 
 // MEMO: added for f# 2.0 support
 module Option =
+  let iter<'T> (f : 'T -> unit) (v : Option<'T>) : Option<'T> =
+    Option.map (fun value ->
+      f value
+      value
+    ) v
+
   let flatten<'T> v : Option<'T> =
     match v with
     | Some (Some v) -> Some v
     | Some (None) -> None
     | None -> None
+    
+  let unwrap lst =
+    List.fold (fun acc v ->
+      match acc, v with
+      | Some acc, Some v -> v :: acc |> Some
+      | Some acc, None -> Some acc
+      | _, _ -> None
+    ) (Some List.empty) lst
+    |> Option.map List.rev
     
   let orElse (def : Option<'T>) (v : Option<'T>) : Option<'T> =
     match v with

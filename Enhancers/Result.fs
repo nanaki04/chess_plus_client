@@ -40,6 +40,14 @@ module Result =
     | Error e -> f e
     | _ -> ()
     
+  let expect def v =
+    match v with
+    | Error e ->
+      Logger.warn e
+      def
+    | Ok v ->
+      v
+    
   let (<!!>) = orFinally
   
   let pushOutward v =
@@ -52,6 +60,11 @@ module Result =
     match o with
     | Some v -> Ok v
     | None -> Error "No such value"
+    
+  let toOption<'T, 'E> (r : Result<'T, 'E>) : Option<'T> =
+    match r with
+    | Ok v -> Some v
+    | Error _ -> None
     
   let flatten r =
     match r with

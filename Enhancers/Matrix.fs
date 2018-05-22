@@ -45,7 +45,7 @@ module Matrix =
   let tryFind r c m =
     m
     |> Map.tryFind r
-    |> Option.map (Map.tryFind c)
+    |> Option.bind (Map.tryFind c)
     
   let private filterColumns p r (cols : Map<_, _>) =
     foldColumns (fun (s : Map<_, _>) _ c v ->
@@ -65,10 +65,19 @@ module Matrix =
       | None -> f v
     ) None m
     
+  let firstRC f m =
+    fold (fun s r c v ->
+      match s with
+      | Some v -> Some v
+      | None -> f r c v
+    ) None m
+      
   let update r c f m =
     m
     |> tryFind r c
-    |> (fun res -> add r c (f res) m)
+    |> fun res -> f res
+    |> Option.map (fun v -> add r c v m)
+    |> Option.defaultValue m
     
   let updateWhere p f m =
     map (fun v ->

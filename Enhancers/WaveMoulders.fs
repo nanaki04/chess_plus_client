@@ -30,7 +30,7 @@ module Moulds =
     member m.import () =
       Ok (m.Domain, m.Invocation)
         
-  type Mould (loc) =
+  type Mould () =
     let mutable location = Unchecked.defaultof<LocationMould>
     
     member m.Location
@@ -39,6 +39,11 @@ module Moulds =
     
     member m.import() =
       m.Location.import ()
+      
+    static member export location =
+      let dto = new Mould ()
+      dto.Location <- LocationMould.export location
+      dto
   
   type AddTileMould () =
     let mutable location = Unchecked.defaultof<LocationMould>
@@ -566,12 +571,38 @@ module Moulds =
           })
         <*> ColorDto.import m.Player
         <!> confirmDeselectTileWave
+        
+  type AddOpenDuelsMould () =
+    let mutable location = Unchecked.defaultof<LocationMould>
+    let mutable duels = Array.empty
+    
+    member m.Location
+      with get () = location
+      and set (v) = location <- v
+    member m.Duels
+      with get () = duels
+      and set (v) = duels <- v
+      
+    static member export (wave) =
+      let (loc, ampl : AddOpenDuelsAmplitude) = wave
+      let m = new AddOpenDuelsMould ()
+      m.Location <- LocationMould.export loc
+      m.Duels <- List.toArray ampl.Duels
+      m
+      
+    interface Importable with
+      member m.import () =
+        Ok (fun duels ->
+          AddOpenDuelsAmplitude {
+            Duels = duels;
+          })
+        <*> Ok (List.ofArray m.Duels)
+        <!> addOpenDuelsWave
                 
   let inline make<'t when 't :> Importable> mould  =
     JsonConversions.import<'t> mould <!>> fun (m : 't) -> (m :> Importable).import ()    
         
   let import mould =
-    Logger.log "IMPORT MOULD"
     let loc =
       JsonConversions.import<Mould> mould <!>> fun m -> m.import ()
       
@@ -595,5 +626,6 @@ module Moulds =
     | l when l = selectClientTileLocation -> make<SelectClientTileMould> mould
     | l when l = deselectTileLocation -> make<DeselectTileMould> mould
     | l when l = confirmDeselectTileLocation -> make<ConfirmDeselectTileMould> mould
+    | l when l = addOpenDuelsLocation -> make<AddOpenDuelsMould> mould
     | l -> Error ("Wave location not found: " + (Tuple.fst l).ToString() + ", " + (Tuple.snd l).ToString())
     

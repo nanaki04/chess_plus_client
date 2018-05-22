@@ -11,9 +11,9 @@ module WellLogger =
     >> log
   
   let wellLogger next well = 
-    log("WELL BEFORE")
+    log("<color='blue'>WELL BEFORE</color>")
     logWell well
     let refreshedWell = next well
-    log("WELL AFTER")
+    log("<color='green'>WELL AFTER</color>")
     logWell refreshedWell
     refreshedWell

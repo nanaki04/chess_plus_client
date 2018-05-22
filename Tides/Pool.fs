@@ -14,12 +14,12 @@ module Pool =
       (fun t -> { t with SelectedBy = None })
     ) well
     
-  let findClientDuelist well =
-    match findPlayer well, findDuelists well with
-    | Some player, Some duelists ->
-      List.tryFind (fun (d : Duelist) -> d.Name = player.Name) duelists
-    | _, _ ->
-      None
+  let isOccupied coord well =
+    findTile coord well
+    >>= fun tile -> tile.Piece
+    |> function
+      | Some _ -> true
+      | _ -> false
       
   let openPopup popup well =
     updatePopups (fun popups -> popup::popups) well
@@ -28,3 +28,25 @@ module Pool =
     updatePopups (fun popups ->
       List.filter (fun p -> p <> popup) popups
     ) well
+    
+  module UiComponent =
+    let init location well =
+      updateUiComponent location (fun _ -> Some Well.UiComponent.initial) well
+      
+    let set location state well =
+      updateUiComponent location (fun _ -> Some state) well
+      
+    let update location f well =
+      updateUiComponent location (Option.map (fun c ->
+        f c
+      )) well
+      
+    let interactable location v well =
+      update location (fun c ->
+        { c with Interactable = v }
+      ) well
+      
+    let visible location v well =
+      update location (fun c ->
+        { c with Visible = v }
+      ) well

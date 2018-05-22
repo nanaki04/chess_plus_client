@@ -34,7 +34,6 @@ module Tides =
       updateTile coordinate (fun _ -> tile) well
     );
     
-    // TODO request player info from player
     tide<DefaultAmplitude> requireLoginLocation (fun () well ->
       Pool.openPopup Login well
     );
@@ -47,7 +46,6 @@ module Tides =
       well
     );
     
-    // TODO send to server
     // @depricated
     tide<LoginAmplitude> loginLocation (fun amplitude well ->
       LoginMould.export (loginLocation, amplitude)
@@ -60,6 +58,7 @@ module Tides =
       updatePlayer (fun _ -> Some player) well
     );
     
+    // @depricated
     tide<FailedLoginAmplitude> failedLoginLocation (fun amplitude well ->
       let ({ Reason = reason } : FailedLoginAmplitude) = amplitude
       // TODO give proper feedback
@@ -72,13 +71,10 @@ module Tides =
       // TODO give proper feedback
       Logger.error reason
       
-      // TODO TEMP
-      JoinDuelMould.export (joinDuelLocation, { ID = "192.168.13.235:5000" })
-      |> upstream
-      
       well
     );
     
+    // @depricated
     tide<NewDuelAmplitude> newDuelLocation (fun amplitude well ->
       NewDuelMould.export (newDuelLocation, amplitude)
       |> upstream
@@ -87,9 +83,12 @@ module Tides =
     
     tide<StartDuelAmplitude> startDuelLocation (fun amplitude well ->
       let ({ Duel = duel } : StartDuelAmplitude) = amplitude
-      updateDuel (fun _ -> Some duel) well
+      updateDuel (fun _ -> Some duel)
+      >> Pool.closePopup PlayDuel
+      <| well
     );
     
+    // @depricated
     tide<JoinDuelAmplitude> joinDuelLocation (fun amplitude well ->
       JoinDuelMould.export (joinDuelLocation, amplitude)
       |> upstream
@@ -135,29 +134,25 @@ module Tides =
     tide<SelectClientTileAmplitude> selectClientTileLocation (fun amplitude well ->
       SelectClientTileMould.export (selectClientTileLocation, amplitude)
       |> upstream
+      
       well
-//      let ({ Coordinate = coord } : SelectClientTileAmplitude) = amplitude
-//      well
-//      |> Pool.findClientDuelist
-//      <!> (fun d ->
-//        SelectTileMould.export (selectTileLocation, { Player = d.Color; Coordinate = coord })
-//        |> upstream    
-//        
-//        Pool.deselect d.Color well
-//        |> updateTile coord (fun t -> { t with SelectedBy = Some d.Color })
-//      )
-//      |> Option.defaultValue well
     );   
-     
+    
     tide<SelectTileAmplitude> selectTileLocation (fun amplitude well ->
+      let timer = Logger.time "selectTile"
       let ({ Player = playerColor; Coordinate = coord } : SelectTileAmplitude) = amplitude
+      
       Pool.deselect playerColor well
       |> updateTile coord (fun t -> { t with SelectedBy = Some playerColor })
+      |> Movements.updateMovableTiles playerColor
+      |> timer
+      // TODO |> Conquers.updateConquerableTiles playerColor
     );
     
     tide<DefaultAmplitude> deselectTileLocation (fun amplitude well ->
       DeselectTileMould.export (deselectTileLocation, amplitude)
-      |> upstream    
+      |> upstream
+      
       well
     );    
     
@@ -188,5 +183,39 @@ module Tides =
     
     tide<TextAmplitude> loginPopupNameChangeLocation (fun amplitude well ->
       updateLoginPopupState (fun s -> { s with Name = amplitude.Text }) well
+    );
+    
+    tide<UiComponentAmplitude> playDuelPopupJoinButtonLocation (fun amplitude well ->
+      Mould.export getOpenDuelsLocation
+      |> upstream
+      
+      Pool.UiComponent.set playDuelPopupJoinButtonLocation amplitude well
+    );
+    
+    tide<UiComponentAmplitude> playDuelPopupNewButtonLocation (fun amplitude well ->
+      Pool.UiComponent.set playDuelPopupNewButtonLocation amplitude well
+    );
+    
+    tide<AddOpenDuelsAmplitude> addOpenDuelsLocation (fun amplitude well ->
+      List.length amplitude.Duels > 0
+      |> Pool.UiComponent.interactable playDuelPopupJoinButtonLocation <| well
+    );
+    
+    tide<DefaultAmplitude> playDuelPopupClickNewLocation (fun amplitude well ->
+      NewDuelMould.export (newDuelLocation, { Map = Classic })
+      |> upstream
+      
+      Pool.UiComponent.interactable playDuelPopupNewButtonLocation false
+      >> Pool.UiComponent.interactable playDuelPopupJoinButtonLocation false
+      <| well
+    );
+    
+    tide<DefaultAmplitude> playDuelPopupClickJoinLocation (fun amplitude well ->
+      JoinDuelMould.export (joinDuelLocation, { ID = "any" })
+      |> upstream
+      
+      Pool.UiComponent.interactable playDuelPopupNewButtonLocation false
+      >> Pool.UiComponent.interactable playDuelPopupJoinButtonLocation false
+      <| well    
     );
   ]

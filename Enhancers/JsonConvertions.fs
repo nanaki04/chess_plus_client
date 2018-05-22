@@ -110,6 +110,7 @@ module DtoTypes =
   type PieceDto (pieceType, color) =
     let mutable ``type`` = pieceType
     let mutable color = color
+    let mutable rules = Unchecked.defaultof<array<int>>
     
     new (pieceType) =
       PieceDto (pieceType, Unchecked.defaultof<ColorDto>)
@@ -122,6 +123,9 @@ module DtoTypes =
     member m.Color
       with get () = color
       and set (v) = color <- v
+    member m.Rules
+      with get () = rules
+      and set (v) = rules <- v
 
   type TileDto (color, piece, selectedBy, conquerableBy) =
     let mutable color = color
@@ -184,17 +188,36 @@ module DtoTypes =
     member m.LoginPopupState
       with get () = loginPopupState
       and set (v) = loginPopupState <- v
+      
+  type UiComponentDto () =
+    [<UnityEngine.SerializeField>]
+    let mutable visible = true;
+    [<UnityEngine.SerializeField>]
+    let mutable interactable = false;
+    
+    member m.Visible
+      with get () = visible
+      and set (v) = visible <- v
+    member m.Interactable
+      with get () = interactable
+      and set (v) = interactable <- v
+  
+  type UiComponentsDto = IDictionary<string, UiComponentDto>
   
   type UiDto () =
     let mutable popups = Array.empty;
     let mutable popupStates = Unchecked.defaultof<PopupStatesDto>
-    
+    let mutable components = Unchecked.defaultof<UiComponentsDto>
+        
     member m.Popups
       with get () = popups
       and set (v) = popups <- v
     member m.PopupStates
       with get () = popupStates
       and set (v) = popupStates <- v
+    member m.Components
+      with get () = components
+      and set (v) = components <- v
     
   type LifeWellDto (player, duel, connection, ui) =
     let mutable player = player
@@ -544,6 +567,7 @@ module JsonConversions =
   module PieceDto =
     let private exportPiece<'t> pieceType (piece : Piece) =
       let pieceDto = new PieceDto(pieceType, ColorDto.export piece.Color)
+      pieceDto.Rules <- List.toArray piece.Rules
       pieceDto
   
     let export piece =
@@ -554,11 +578,12 @@ module JsonConversions =
       | Some (Bishop bishop) -> exportPiece "Bishop" bishop
       | Some (Knight knight) -> exportPiece "Knight" knight
       | Some (Pawn pawn) -> exportPiece "Pawn" pawn
-      | _ -> new PieceDto()
+      | _ -> Unchecked.defaultof<PieceDto>
       
     let inline private importPiece (piece : PieceDto) =
       Ok Piece.create
       <*> ColorDto.import piece.Color
+      <*> Ok (List.ofArray piece.Rules)
       
     let import (piece : PieceDto) =
       match piece.Type with
@@ -709,18 +734,47 @@ module JsonConversions =
     let import (popupStates : PopupStatesDto) =
       Ok PopupStates.create
       <*> LoginPopupStateDto.import popupStates.LoginPopupState    
+
+  [<System.Serializable>]
+  module UiComponentDto =
+    let export (uiComponent : UiComponent) =
+      let dto = new UiComponentDto ()
+      dto.Visible <- uiComponent.Visible
+      dto.Interactable <- uiComponent.Interactable
+      dto
+      
+    let import (uiComponent : UiComponentDto) =
+      Ok UiComponent.create
+      <*> Nullable.toResult uiComponent.Visible
+      <*> Nullable.toResult uiComponent.Interactable
+   
+  module UiComponentsDto =
+    let export (uiComponents : UiComponents) =
+      uiComponents
+      |> Map
+      |> Col.map (fun (k, v) -> (k, UiComponentDto.export(v)))
+      |> Col.toDict
+    
+    let import (uiComponents : UiComponentsDto) =
+      uiComponents
+      |> Dict
+      |> Col.map (fun (k, v) -> (k, UiComponentDto.import(v)))
+      |> Result.unwrapCol
+      <!> Col.toMap
       
   module UiDto =
     let export (ui : Ui) =
       let dto = new UiDto ()
       dto.Popups <- List.map PopupDto.export ui.Popups |> List.toArray
       dto.PopupStates <- PopupStatesDto.export ui.PopupStates
+      dto.Components <- UiComponentsDto.export ui.Components
       dto
       
     let import (ui : UiDto) =
       Ok Ui.create
       <*> (ui.Popups |> (List.ofArray >> List.map PopupDto.import >> Result.unwrap))
       <*> PopupStatesDto.import ui.PopupStates
+      <*> UiComponentsDto.import ui.Components
       
   module LifeWellDto =
     let export (lifewell : LifeWell) =

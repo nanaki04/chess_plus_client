@@ -23,8 +23,13 @@ type PlayerView () =
 //      flow <| joinDuelWave (JoinDuelAmplitude {
 //       ID = "127.0.0.1:5000"
 //      })
-      flow <| newDuelWave (NewDuelAmplitude {
-        Map = Classic;
+//      flow <| newDuelWave (NewDuelAmplitude {
+//        Map = Classic;
+//      })
+//      <!!> Logger.warn
+      
+      flow <| openPopupWave (OpenPopupAmplitude {
+        Popup = PlayDuel;
       })
       <!!> Logger.warn
     )

@@ -40,9 +40,17 @@ type PopupStates = {
   LoginPopupState : LoginPopupState;
 }
 
+type UiComponent = {
+  Visible : bool;
+  Interactable : bool;
+}
+
+type UiComponents = Map<string, UiComponent>
+
 type Ui = {
   Popups : Popup list;
   PopupStates : PopupStates;
+  Components : UiComponents;
 }
 
 type LifeWell = {
@@ -163,17 +171,44 @@ module Well =
         LoginPopupState = LoginPopupState.initial;
       }
       
+  module UiComponent =
+    let create
+      visible
+      interactable
+      =
+        {
+          Visible = visible;
+          Interactable = interactable;
+        }
+        
+    let initial =
+      {
+        Visible = true;
+        Interactable = false;
+      }
+      
+    let interactable v c =
+      { c with Interactable = v }
+      
+    let visible v c =
+      { c with Visible = v }
+      
+  module UiComponents =
+    let initial = Map.empty
+      
   module Ui =
-    let create popups popupStates =
+    let create popups popupStates components =
       {
         Popups = popups;
         PopupStates = popupStates;
+        Components = components;
       }
       
     let initial =
       {
         Popups = [];
         PopupStates = PopupStates.initial;
+        Components = UiComponents.initial;
       }
       
   module LifeWell =
