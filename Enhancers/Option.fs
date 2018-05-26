@@ -23,6 +23,14 @@ module Option =
     ) (Some List.empty) lst
     |> Option.map List.rev
     
+  let filter lst =
+    List.fold (fun acc v ->
+      match v with
+      | Some v -> v :: acc
+      | _ -> acc
+    ) List.empty lst
+    |> List.rev
+    
   let orElse (def : Option<'T>) (v : Option<'T>) : Option<'T> =
     match v with
     | None -> def

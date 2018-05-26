@@ -2,6 +2,12 @@
 
 module Tuple =
   let retn2<'t1, 't2> (v1 : 't1) (v2 : 't2) = (v1, v2)
+  
+  let add1<'t1, 't2> (v1 : 't1) (v2 : 't2) = (v2, v1)
+  
+  let add2<'t1, 't2, 't3> (v1 : 't1) ((v2, v3) : 't2 * 't3) = (v2, v3, v1)
+  
+  let prepend2<'t1, 't2, 't3> (v1 : 't1) ((v2, v3) : 't2 * 't3) = (v1, v2, v3)
 
   let map1st<'t1, 't2, 'r> f (fst : 't1) (snd : 't2) : 'r * 't2 =
     (f fst, snd)

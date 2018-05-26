@@ -8,11 +8,13 @@ module Pool =
   
   let (<!>) = fun o f -> Option.map f o
   
-  let deselect playerColor well =
-    updateTiles (Matrix.updateWhere
-      (fun t -> t.SelectedBy = Some playerColor)
-      (fun t -> { t with SelectedBy = None })
-    ) well
+  let deselect playerColor =
+    updateSelectedTile playerColor (fun t -> { t with SelectedBy = None })
+    >> updateSelectionSelected playerColor (fun _ -> None)
+    
+  let select coord playerColor =
+    updateTile coord (fun t -> { t with SelectedBy = Some playerColor })
+    >> updateSelectionSelected playerColor (fun _ -> Some coord)
     
   let isOccupied coord well =
     findTile coord well

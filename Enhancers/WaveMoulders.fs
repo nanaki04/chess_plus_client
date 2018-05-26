@@ -455,7 +455,7 @@ module Moulds =
     interface Importable with
       member m.import () =
         Ok (fun piece from t ->
-          MovePieceAmplitude {
+          ConquerTileAmplitude {
             Piece = piece;
             From = from;
             To = t;

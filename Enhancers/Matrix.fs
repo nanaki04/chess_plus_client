@@ -79,6 +79,35 @@ module Matrix =
     |> Option.map (fun v -> add r c v m)
     |> Option.defaultValue m
     
+  let updateRow r f m =
+    m
+    |> Map.tryFind r
+    |> f
+    |> function
+    | Some result -> Map.add r result m
+    | None -> Map.remove r m
+    
+  let updateAll coordinates f m =
+    let updateElement (r, c) row =
+      row
+      |> Map.tryFind c
+      |> f (r, c)
+      |> function
+      | Some result -> Map.add c result row
+      | None -> Map.remove c row
+  
+    let foldCoordGroup m (r, coords) =
+      Map.tryFind r m
+      |> function
+      | Some row -> 
+        Seq.fold (fun row coord -> updateElement coord row) row coords
+        |> Map.add r <| m
+      | None ->
+        m
+  
+    Seq.groupBy (fun (r, _) -> r) coordinates
+    |> Seq.fold foldCoordGroup m
+    
   let updateWhere p f m =
     map (fun v ->
       if p v then f v else v

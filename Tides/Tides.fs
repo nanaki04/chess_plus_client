@@ -127,25 +127,43 @@ module Tides =
     
     tide<ConquerTileAmplitude> conquerTileLocation (fun amplitude well ->
       let ({ Piece = piece; From = from; To = t } : ConquerTileAmplitude) = amplitude
+      let playerColor = (Types.Pieces.map (fun p -> p.Color) piece)
+      
       updatePiece from (fun _ -> None) well
       |> updatePiece t (fun _ -> Some piece)
+      |> Movements.resetMovableTiles playerColor
+      |> Pool.deselect playerColor
     );
     
     tide<SelectClientTileAmplitude> selectClientTileLocation (fun amplitude well ->
-      SelectClientTileMould.export (selectClientTileLocation, amplitude)
-      |> upstream
+      let (<*>) = Option.apply
       
-      well
+      if Movements.isMovableTile amplitude.Coordinate well then
+        Some (fun from piece -> 
+          MovePieceMould.export (movePieceLocation, { From = from; To = amplitude.Coordinate; Piece = piece })
+          |> upstream)
+        <*> findOwnSelectedTileCoords well
+        <*> findOwnSelectedPiece well
+        |> ignore
+        
+        well
+      else
+        SelectClientTileMould.export (selectClientTileLocation, amplitude)
+        |> upstream
+        
+        well
     );   
     
     tide<SelectTileAmplitude> selectTileLocation (fun amplitude well ->
-      let timer = Logger.time "selectTile"
       let ({ Player = playerColor; Coordinate = coord } : SelectTileAmplitude) = amplitude
-      
+   
+      Logger.now "selectTile:deselect"
       Pool.deselect playerColor well
-      |> updateTile coord (fun t -> { t with SelectedBy = Some playerColor })
+      |> Logger.nowP "SelectTile:select"
+      |> Pool.select coord playerColor
+      |> Logger.nowP "SelectTile:updateMovableTiles"
       |> Movements.updateMovableTiles playerColor
-      |> timer
+      |> Logger.nowP "SelectTile:done"
       // TODO |> Conquers.updateConquerableTiles playerColor
     );
     
@@ -158,7 +176,8 @@ module Tides =
     
     tide<ConfirmDeselectTileAmplitude> confirmDeselectTileLocation (fun amplitude well ->
       let ({ Player = playerColor } : ConfirmDeselectTileAmplitude) = amplitude
-      Pool.deselect playerColor well
+      Movements.resetMovableTiles playerColor well
+      |> Pool.deselect playerColor
     );
     
     tide<OpenPopupAmplitude> openPopupLocation (fun amplitude well ->

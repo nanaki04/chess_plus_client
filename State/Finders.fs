@@ -36,6 +36,36 @@ module Finders =
     |> findDuel
     |> Option.map (fun d -> d.Board)
     
+  let findSelections well =
+    well
+    |> findBoard
+    <!> fun b -> b.Selections
+    
+  let findWhiteSelections well =
+    Logger.warn "find white selections"
+    well
+    |> findSelections
+    <!> fun s -> s.White
+    
+  let findBlackSelections well =
+    Logger.warn "find black selections"
+    well
+    |> findSelections
+    <!> fun s -> s.Black 
+  
+  let findSelectionsForPlayer playerColor well =
+    match playerColor with
+    | White -> findWhiteSelections well
+    | Black -> findBlackSelections well
+       
+  let findSelectedTileCoord playerColor well =
+    findSelectionsForPlayer playerColor well
+    >>= fun s -> s.Selected
+    
+  let findConquerableTileCoords playerColor well =
+    findSelectionsForPlayer playerColor well
+    <!> fun s -> s.Conquerable
+  
   let findTiles lifeWell =
     lifeWell
     |> findBoard
@@ -69,14 +99,12 @@ module Finders =
     |> Option.flatten
     
   let findPieceMovementRules coord well =
-    let timer = Logger.time "findPieceMovementRules"
     findPieceRules coord well
     <!> List.filter (fun r ->
       match r with
       | MoveRule r -> true
       | _ -> false
     )
-    |> timer
     
   let findPieceConquerRules coord well =
     findPieceRules coord well
@@ -101,21 +129,62 @@ module Finders =
     | _, _ ->
       None
       
-  let findSelectedTile well =
-    let (<*>) = Option.apply
+  let findOpponentDuelist well =
+    match findPlayer well, findDuelists well with
+    | Some player, Some duelists ->
+      List.tryFind (fun (d : Duelist) -> d.Name <> player.Name) duelists
+    | _, _ ->
+      None
+      
+  let findOwnSelectedTileCoords well =
+    findClientDuelist well
+    >>= (fun d -> findSelectedTileCoord d.Color well)
+
     
-    let timer = Logger.time "findSelectedTile"
-    (Some (fun (duelist : Duelist) tiles ->
-      Matrix.firstRC (fun row column tile ->
-        if tile.SelectedBy = Some duelist.Color
-        then Some ((row, column), tile)
-        else None
-      ) tiles
-    ))
-    <*> findClientDuelist well
-    <*> findTiles well
-    |> Option.flatten
-    |> timer
+  let findOwnSelectedTile well =
+    findOwnSelectedTileCoords well
+    >>= (fun coord ->
+      findTile coord well
+      <!> Tuple.retn2 coord
+    )  
+    
+  let findOwnConquerableTileCoords well =
+    findClientDuelist well
+    >>= (fun d -> findConquerableTileCoords d.Color well) 
+  
+  let findOwnSelectedPiece well =
+    findOwnSelectedTile well
+    >>= fun (_, t) -> t.Piece
+  
+//    let (<*>) = Option.apply
+//    
+//    let timer = Logger.time "findSelectedTile"
+//    (Some (fun (duelist : Duelist) tiles ->
+//      Matrix.firstRC (fun row column tile ->
+//        if tile.SelectedBy = Some duelist.Color
+//        then Some ((row, column), tile)
+//        else None
+//      ) tiles
+//    ))
+//    <*> findClientDuelist well
+//    <*> findTiles well
+//    |> Option.flatten
+//    |> timer
+
+  let findOpponentSelectedTileCoords well =
+    findOpponentDuelist well
+    >>= (fun d -> findSelectedTileCoord d.Color well)
+    
+  let findOpponentSelectedTile well =
+    findOpponentSelectedTileCoords well
+    >>= (fun coord ->
+      findTile coord well
+      <!> Tuple.retn2 coord
+    )
+    
+  let findOpponentConquerableTileCoords well =
+    findOpponentDuelist well
+    >>= (fun d -> findConquerableTileCoords d.Color well)
       
   let findTargetTile rule well =
     let findTarget (x, y) (row, column) =
@@ -126,7 +195,7 @@ module Finders =
         | (Ok row, Ok col) -> findTile (row, col) well
         | _ -> None
   
-    match rule, (findSelectedTile well) with
+    match rule, (findOwnSelectedTile well) with
     | MoveRule { Offset = offset; }, Some (coordinate, _) ->
       findTarget offset coordinate
     | ConquerRule { Offset = offset; }, Some(coordinate, _) ->

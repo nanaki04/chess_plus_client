@@ -1,6 +1,5 @@
 ﻿namespace ChessPlus
 
-
 type Player = {
   Name : Name;
 }
@@ -16,9 +15,20 @@ type Tile = {
   SelectedBy : Option<Color>;
   ConquerableBy : Option<Color>;
 }
+
+type Selection = {
+  Selected : Coordinate option;
+  Conquerable : Coordinate list;
+}
+
+type Selections = {
+  Black : Selection;
+  White : Selection;  
+}
   
 type Board = {
-  Tiles : Map<Row, Map<Column, Tile>>
+  Tiles : Map<Row, Map<Column, Tile>>;
+  Selections : Selections;
 }
 
 type Duel = {
@@ -78,16 +88,44 @@ module Well =
         SelectedBy = None;
         ConquerableBy = None;
       }
+      
+  module Selection =
+    let create selected conquerable =
+      {
+        Selected = selected;
+        Conquerable = conquerable;
+      }
+      
+    let initial =
+      {
+        Selected = None;
+        Conquerable = List.empty;
+      }
+      
+  module Selections =
+    let create black white =
+      {
+        Black = black;
+        White = white;
+      }
+      
+    let initial =
+      {
+        Black = Selection.initial;
+        White = Selection.initial;
+      }
  
   module Board =
-    let create tiles =
+    let create tiles selections =
       {
         Tiles = tiles;
+        Selections = selections;
       }
       
     let initial =
       {
         Tiles = Map.empty;
+        Selections = Selections.initial;
       }
       
   module Player =

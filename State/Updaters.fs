@@ -3,6 +3,9 @@
 module Updaters =
   open Well
   open UnityEngine
+  open Option
+  
+  let (<!>) = fun v f -> Option.map f v
   
   let update updater well =
     updater well
@@ -45,6 +48,81 @@ module Updaters =
     )
     |> updateTiles <| well
     
+  let updateOwnSelectedTile updater well =
+    Finders.findOwnSelectedTileCoords well
+    <!> fun coord -> updateTile coord updater well
+    
+  let updateOtherSelectedTile updater well =
+    Finders.findOpponentSelectedTileCoords well
+    <!> fun coord -> updateTile coord updater well
+    
+  let updateSelectedTile playerColor updater well =
+    Finders.findSelectedTileCoord playerColor well
+    <!> fun coord -> updateTile coord updater well
+    |> Option.defaultValue well
+    
+  let updateOwnConquerableTiles updater well =
+    Finders.findOwnConquerableTileCoords well
+    <!> List.fold (fun w coord -> updateTile coord updater w) well
+    |> Option.defaultValue well
+    
+  let updateOpponentConquerableTiles updater well =
+    Finders.findOpponentConquerableTileCoords well
+    <!> List.fold (fun w coord -> updateTile coord updater w) well
+    |> Option.defaultValue well
+
+  let updateConquerableTiles playerColor updater well =
+    Finders.findConquerableTileCoords playerColor well
+    <!> List.fold (fun w coord -> updateTile coord updater w) well
+    |> Option.defaultValue well
+
+  let updateSelections updater well =
+    well
+    |> updateBoard (fun b -> { b with Selections = updater b.Selections })
+    
+  let updateSelection playerColor updater well =
+    match playerColor with
+    | White ->
+      updateSelections (fun s -> { s with White = updater s.White }) well
+    | Black ->
+      updateSelections (fun s -> { s with Black = updater s.Black }) well
+      
+  let updateOwnSelection updater well =
+    Finders.findClientDuelist well
+    <!> fun { Color = color } -> updateSelection color updater well
+    |> Option.defaultValue well
+    
+  let updateOpponentSelection updater well =
+    Finders.findOpponentDuelist well
+    <!> fun { Color = color } -> updateSelection color updater well
+    |> Option.defaultValue well
+    
+  let updateSelectionSelected playerColor updater well =
+    updateSelection playerColor (fun s -> { s with Selected = updater s.Selected }) well
+    
+  let updateOwnSelectionSelected updater well =
+    Finders.findClientDuelist well
+    <!> fun { Color = color } -> updateSelectionSelected color updater well
+    |> Option.defaultValue well
+  
+  let updateOpponentSelectionSelected updater well =
+    Finders.findOpponentDuelist well
+    <!> fun { Color = color } -> updateSelectionSelected color updater well
+    |> Option.defaultValue well
+    
+  let updateSelectionConquerable playerColor updater well =
+    updateSelection playerColor (fun s -> { s with Conquerable = updater s.Conquerable }) well
+    
+  let updateOwnSelectionConquerable updater well =
+    Finders.findClientDuelist well
+    <!> fun { Color = color } -> updateSelectionConquerable color updater well
+    |> Option.defaultValue well
+  
+  let updateOpponentSelectionConquerable updater well =
+    Finders.findOpponentDuelist well
+    <!> fun { Color = color } -> updateSelectionConquerable color updater well 
+    |> Option.defaultValue well
+       
   let updatePiece coord updater well =
     well
     |> updateTile coord (fun t -> { t with Piece = updater t.Piece })
@@ -77,5 +155,3 @@ module Updaters =
       |> Option.map (fun uiComponent -> Map.add id uiComponent components)
       |> Option.defaultValue components
     )
-    
-  

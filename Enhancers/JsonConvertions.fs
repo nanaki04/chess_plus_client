@@ -153,8 +153,31 @@ module DtoTypes =
       with get () = conquerableBy
       and set (v) = conquerableBy <- v
       
+  type SelectionDto () =
+    let mutable selected = Unchecked.defaultof<CoordinateDto>
+    let mutable conquerable = Array.empty
+    
+    member m.Selected
+      with get () = selected
+      and set (v) = selected <- v
+    member m.Conquerable
+      with get () = conquerable
+      and set (v) = conquerable <- v
+      
+  type SelectionsDto () =
+    let mutable black = Unchecked.defaultof<SelectionDto>
+    let mutable white = Unchecked.defaultof<SelectionDto>
+    
+    member m.Black
+      with get () = black
+      and set (v) = black <- v
+    member m.White
+      with get () = white
+      and set (v) = white <- v
+  
   type BoardDto = {
     Tiles : IDictionary<int, IDictionary<string, TileDto>>;
+    Selections : SelectionsDto
   }
   type PlayerDto = {
     Name : string;
@@ -293,6 +316,10 @@ module JsonConversions =
       | Six -> 6
       | Seven -> 7
       | Eight -> 8
+      | Nine -> 9
+      | Ten -> 10
+      | Eleven -> 11
+      | Twelve -> 12
       
     let import row =
       match row with
@@ -304,6 +331,10 @@ module JsonConversions =
       | 6 -> Ok Six
       | 7 -> Ok Seven
       | 8 -> Ok Eight
+      | 9 -> Ok Nine
+      | 10 -> Ok Ten
+      | 11 -> Ok Eleven
+      | 12 -> Ok Twelve
       | _ -> Error ("No such row: " + row.ToString())
  
   module ColumnDto =
@@ -317,6 +348,10 @@ module JsonConversions =
       | F -> "F"
       | G -> "G"
       | H -> "H"
+      | I -> "I"
+      | J -> "J"
+      | K -> "K"
+      | L -> "L"
       
     let import column =
       match column with
@@ -328,6 +363,10 @@ module JsonConversions =
       | "F" -> Ok F
       | "G" -> Ok G
       | "H" -> Ok H
+      | "I" -> Ok I
+      | "J" -> Ok J
+      | "K" -> Ok K
+      | "L" -> Ok L
       | _ -> Error ("No such column: " + column.ToString())
  
   module CoordinateDto =
@@ -615,6 +654,36 @@ module JsonConversions =
       <*> (importNullable tile.SelectedBy ColorDto.import)
       <*> (importNullable tile.ConquerableBy ColorDto.import)
 
+  module SelectionDto =
+    let export (selection : Selection) : SelectionDto =
+      let dto = new SelectionDto ()
+      Option.map CoordinateDto.export selection.Selected 
+      |> Option.map (fun selected -> dto.Selected <- selected)
+      |> ignore
+      dto.Conquerable <- List.map CoordinateDto.export selection.Conquerable |> List.toArray
+      dto
+      
+    let import (selection : SelectionDto) =
+      Ok Selection.create
+      <*> (Nullable.toOption selection.Selected
+        |> Option.map CoordinateDto.import
+        |> Result.pushOutward)
+      <*> (List.ofArray selection.Conquerable
+        |> List.map CoordinateDto.import
+        |> Result.unwrap)
+      
+  module SelectionsDto =
+    let export (selections : Selections) =
+      let dto = new SelectionsDto ()
+      dto.Black <- SelectionDto.export selections.Black
+      dto.White <- SelectionDto.export selections.White
+      dto
+      
+    let import (selections : SelectionsDto) =
+      Ok Selections.create
+      <*> SelectionDto.import selections.Black
+      <*> SelectionDto.import selections.White
+    
   module BoardDto =
     let export (board : Board) : BoardDto =
       let makeTile (k, v) = (ColumnDto.export k, TileDto.export v)
@@ -626,20 +695,28 @@ module JsonConversions =
         Map board.Tiles
         |> Col.map makeTiles
         |> Col.toDict
+      let selections =
+        SelectionsDto.export board.Selections
       {
         Tiles = tiles;
+        Selections = selections;
       }
     
     let import (board : BoardDto) : Result<Board, string> =
-      Matrix.fromDict board.Tiles
-      |> Matrix.fold (fun s r c v ->
-        Ok Matrix.add
-        <*> RowDto.import r
-        <*> ColumnDto.import c
-        <*> TileDto.import v
-        <*> s
-      ) (Ok Matrix.empty)
-      <!> fun tiles -> ({ Tiles = tiles } : Board)
+      let tiles = 
+        Matrix.fromDict board.Tiles
+        |> Matrix.fold (fun s r c v ->
+          Ok Matrix.add
+          <*> RowDto.import r
+          <*> ColumnDto.import c
+          <*> TileDto.import v
+          <*> s
+        ) (Ok Matrix.empty)
+        
+      Ok Board.create
+      <*> tiles
+      <*> Ok Selections.initial
+      // <*> SelectionsDto.import board.Selections
       
   module PlayerDto =
     let export (player : Player) : PlayerDto =

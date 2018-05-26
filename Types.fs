@@ -15,6 +15,10 @@ type Row =
 | Six
 | Seven
 | Eight
+| Nine
+| Ten
+| Eleven
+| Twelve
 
 type Column =
 | A
@@ -25,6 +29,10 @@ type Column =
 | F
 | G
 | H
+| I
+| J
+| K
+| L
 
 type Coordinate = Row * Column
 
@@ -141,6 +149,10 @@ module Types =
       | 6 -> Ok F
       | 7 -> Ok G
       | 8 -> Ok H
+      | 9 -> Ok I
+      | 10 -> Ok J
+      | 11 -> Ok K
+      | 12 -> Ok L
       | _ -> Error ("Column index out of range: " + x.ToString())
       
     let toInt x =
@@ -153,6 +165,10 @@ module Types =
       | F -> 6
       | G -> 7
       | H -> 8
+      | I -> 9
+      | J -> 10
+      | K -> 11
+      | L -> 12
       
   module Row =
     let fromInt x =
@@ -165,6 +181,10 @@ module Types =
       | 6 -> Ok Six
       | 7 -> Ok Seven
       | 8 -> Ok Eight
+      | 9 -> Ok Nine
+      | 10 -> Ok Ten
+      | 11 -> Ok Eleven
+      | 12 -> Ok Twelve
       | _ -> Error ("Row index out of range: " + x.ToString())
   
     let toInt x =
@@ -177,6 +197,10 @@ module Types =
       | Six -> 6
       | Seven -> 7
       | Eight -> 8
+      | Nine -> 9
+      | Ten -> 10
+      | Eleven -> 11
+      | Twelve -> 12
       
   module Coordinate =
     let fromInt (x, y) =

@@ -6,6 +6,8 @@ module Movements =
   open Option
   open Types
   
+  let (<*>) = Option.apply
+  
   let private areRuleConditionsMet rule well =
     let timer = Logger.time "areRuleConditionsMet"
     MoveRule.map (fun { Condition = conditions } ->
@@ -29,10 +31,9 @@ module Movements =
 //    ) (Ok List.empty) rules
 //    |> timer
 
-  let movableTiles well =
-    let timer = Logger.time "movableTiles"
-    findSelectedTile well
-    >>= fun (coord, _) -> findPieceMovementRules coord well <!> (Tuple.retn2 coord)
+  let calculateMovableTiles playerColor well =
+    findSelectedTileCoord playerColor well
+    >>= fun coord -> findPieceMovementRules coord well <!> (Tuple.retn2 coord)
     <!> fun (coord, rules) -> (coord, filterSatisfiedRules rules well)
     <!> fun ((r, c), rules) -> ((Row.toInt r, Column.toInt c), rules)
     <!> (fun ((r, c), rules) ->
@@ -42,40 +43,41 @@ module Movements =
       )))
       |> Result.map (List.map (Option.defaultValue (0, 0)))
       |> Result.map (fun coordinates -> List.map (Coordinate.fromInt >> Result.toOption) coordinates)
+      |> Result.map Option.filter
     )
     |> Option.defaultValue (Ok List.empty)
-    |> timer
+   
+  let resetMovableTiles playerColor well =
+    updateConquerableTiles playerColor (fun t -> { t with ConquerableBy = None }) well
+  
+  let setMovableTiles playerColor well =
+    findConquerableTileCoords playerColor well
+    <!> (fun coords ->
+      updateTiles (fun tiles ->
+        Matrix.updateAll coords (fun _ tile ->
+          Option.map (fun t -> { t with ConquerableBy = Some playerColor }) tile
+        ) tiles
+      ) well
+    )
+    |> Option.defaultValue well
    
   let updateMovableTiles playerColor well =
-    let timer = Logger.time "updateMovableTiles"
-    match movableTiles well, findTiles well with
-    | Ok movableTiles, Some tiles ->
-      Matrix.updateWhere 
-        (fun tile -> tile.ConquerableBy = Some playerColor)
-        (fun tile -> { tile with ConquerableBy = None })
-      >> (fun tiles ->
-        List.fold (fun (m : Map<Row, Map<Column, Tile>>) coord ->
-          Option.map (fun (r, c) ->
-            Matrix.update r c (Option.map (fun tile -> { tile with ConquerableBy = Some playerColor})) m
-          ) coord
-          |> Option.defaultValue m
-        ) tiles movableTiles
-      )
-      |> updateTiles <| well
-      |> timer
-    | Error e, _ ->
+    Logger.now "updateMovableTiles:calculateMovableTiles"
+    match calculateMovableTiles playerColor well with
+    | Ok coords ->
+      Logger.now "updateMovableTiles:resetMovableTiles"
+      resetMovableTiles playerColor well
+      |> Logger.nowP "updateMovableTiles:updateSelectionConquerable"
+      |> updateSelectionConquerable playerColor (fun _ -> coords)
+      |> Logger.nowP "updateMovableTiles:setMovableTiles"
+      |> setMovableTiles playerColor
+      |> Logger.nowP "updateMovableTiles:done"
+    | Error e ->
       Logger.warn e
-      well
-    | _, _ ->
-      Logger.warn "no movable tiles"
       well
     
   let isMovableTile coord well =
-    let (<!>) = fun f v -> Result.map v f
-    
-    movableTiles well
-    <!> List.tryFind (fun movableTile -> movableTile = coord)
-    <!> function
-      | Some _ -> true
-      | _ -> false
+    findOwnConquerableTileCoords well
+    <!> List.contains coord
+    |> Option.defaultValue false
     

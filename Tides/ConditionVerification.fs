@@ -42,7 +42,7 @@ module ConditionVerification =
       |> Conditional
       |> isBlockedTimer
           
-    match rule, (findSelectedTile well) with
+    match rule, (findOwnSelectedTile well) with
     | MoveRule { Offset = offset; }, Some (coordinate, _) ->
       isBlocked offset coordinate
       |> timer
