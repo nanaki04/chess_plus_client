@@ -33,6 +33,7 @@ module Movements =
 
   let calculateMovableTiles playerColor well =
     findSelectedTileCoord playerColor well
+    >>= fun coord -> if Pool.isPlayerPiece coord well then Some coord else None
     >>= fun coord -> findPieceMovementRules coord well <!> (Tuple.retn2 coord)
     <!> fun (coord, rules) -> (coord, filterSatisfiedRules rules well)
     <!> fun ((r, c), rules) -> ((Row.toInt r, Column.toInt c), rules)
@@ -63,8 +64,8 @@ module Movements =
    
   let updateMovableTiles playerColor well =
     Logger.now "updateMovableTiles:calculateMovableTiles"
-    match calculateMovableTiles playerColor well with
-    | Ok coords ->
+    match calculateMovableTiles playerColor well, Pool.isPlayer playerColor well with
+    | Ok coords, true ->
       Logger.now "updateMovableTiles:resetMovableTiles"
       resetMovableTiles playerColor well
       |> Logger.nowP "updateMovableTiles:updateSelectionConquerable"
@@ -72,8 +73,10 @@ module Movements =
       |> Logger.nowP "updateMovableTiles:setMovableTiles"
       |> setMovableTiles playerColor
       |> Logger.nowP "updateMovableTiles:done"
-    | Error e ->
+    | Error e, _ ->
       Logger.warn e
+      well
+    | _, _ ->
       well
     
   let isMovableTile coord well =

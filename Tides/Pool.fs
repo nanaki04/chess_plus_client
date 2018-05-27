@@ -23,6 +23,19 @@ module Pool =
       | Some _ -> true
       | _ -> false
       
+  let isPlayer playerColor well =
+    findClientDuelist well
+    |> function
+    | Some duelist -> duelist.Color = playerColor
+    | _ -> false
+    
+  let isPlayerPiece coord well =
+    match findPiece coord well, findClientDuelist well with
+    | Some p, Some { Color = playerColor } ->
+      Types.Pieces.map (fun p -> p.Color = playerColor) p
+    | _, _ ->
+      false
+      
   let openPopup popup well =
     updatePopups (fun popups -> popup::popups) well
     
