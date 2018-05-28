@@ -60,6 +60,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Config/Env.fs" />
     <Compile Include="Logging/Logger.fs" />
     <Compile Include="Enhancers/Result.fs" />
     <Compile Include="Enhancers/Col.fs" />
@@ -84,7 +85,7 @@
     <Compile Include="Logging/WellLogger.fs" />
     <Compile Include="Logging/WaveLogger.fs" />
     <Compile Include="Tides/Pool.fs" />
-    <Compile Include="Tides\ConditionVerification.fs" />
+    <Compile Include="Tides/ConditionVerification.fs" />
     <Compile Include="Tides/Operators.fs" />
     <Compile Include="Tides/Clauses.fs" />
     <Compile Include="Tides/Movements.fs" />

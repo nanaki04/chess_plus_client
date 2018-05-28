@@ -4,11 +4,12 @@ module Udp =
   open System.Net.Sockets
   open System.Net
   open System.Text
+  open EnvAccessor
 
-  let client = new UdpClient (5000)
+  let client = new UdpClient (env.UdpClientPort)
   //let ip = IPAddress.Parse("192.168.13.211")
-  let ip = IPAddress.Parse("127.0.0.1")
-  let server = new IPEndPoint (ip, 1337)
+  let ip = IPAddress.Parse(env.UdpServerAddress)
+  let server = new IPEndPoint (ip, env.UdpServerPort)
   let incomingEndpoint = new IPEndPoint (IPAddress.Any, 0)
   
   let agent = MailboxProcessor.Start(fun inbox ->

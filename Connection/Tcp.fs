@@ -5,9 +5,10 @@ module Tcp =
   open System.Net.Sockets
   open System.Net
   open System.Text
+  open EnvAccessor
 
   //let client = new TcpClient("192.168.13.211", 1338)
-  let client = new TcpClient("127.0.0.1", 1338)
+  let client = new TcpClient(env.TcpServerAddress, env.TcpServerPort)
   let stream = client.GetStream ()
   
   let agent = MailboxProcessor.Start(fun inbox ->
