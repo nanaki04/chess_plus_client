@@ -17,28 +17,36 @@ module Observers =
   let observeDuel (react : Option<Duel> -> LifeWell -> unit) =
     watcher findDuel react
     |> guard
-
-  let observeBoard (react : Option<Board> -> LifeWell -> unit) =
-    watcher findBoard react
-    |> guard
     
-  let observeTile coord (react : Option<Tile> -> LifeWell -> unit) =
+  let observeTiles (react : TileWell -> TileWell -> unit) =
+    watcher id react
+    |> guardTileWell
+    
+  let observeTile coord (react : Option<Tile> -> TileWell -> unit) =
     let (row, col) = coord
     watcher (findTile coord) react
-    |> guard
+    |> guardTileWell
     
-  let observePiece coord (react : Option<Pieces> -> LifeWell -> unit) =
+  let observePieces (react : PieceWell -> PieceWell -> unit) =
+    watcher id react
+    |> guardPieceWell
+    
+  let observePiece coord (react : Option<Pieces> -> PieceWell -> unit) =
     watcher (findPiece coord) react
-    |> guard
+    |> guardPieceWell
     
-  let observePopups (react : Popup list -> LifeWell -> unit) =
+  let observePopups (react : Popup list -> UiWell -> unit) =
     watcher findPopups react
-    |> guard
+    |> guardUiWell
     
-  let observeUiComponent location (react : Option<UiComponent> -> LifeWell -> unit) =
+  let observeUiComponent location (react : Option<UiComponent> -> UiWell -> unit) =
     let id = Types.Location.toString location
     watcher (findUiComponent id) react
-    |> guard
+    |> guardUiWell
+  
+  let observeSelections (react : TileSelectionWell -> TileSelectionWell -> unit) =
+    watcher id react
+    |> guardTileSelectionWell
     
   let observe (react : LifeWell -> unit) =
     watcher find (fun well _ -> react well)

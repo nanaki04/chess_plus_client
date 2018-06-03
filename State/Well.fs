@@ -11,9 +11,6 @@ type Duelist = {
 
 type Tile = {
   Color : Color;
-  Piece : Option<Pieces>;
-  SelectedBy : Option<Color>;
-  ConquerableBy : Option<Color>;
 }
 
 type Selection = {
@@ -21,20 +18,8 @@ type Selection = {
   Conquerable : Coordinate list;
 }
 
-type Selections = {
-  Black : Selection;
-  White : Selection;  
-}
-  
-type Board = {
-  Tiles : Map<Row, Map<Column, Tile>>;
-  Selections : Selections;
-}
-
 type Duel = {
   Duelists : list<Duelist>;
-  Board : Board;
-  Rules : Rules;
 }
 
 type Connection = {
@@ -57,36 +42,48 @@ type UiComponent = {
 
 type UiComponents = Map<string, UiComponent>
 
-type Ui = {
+type UiWell = {
   Popups : Popup list;
   PopupStates : PopupStates;
   Components : UiComponents;
 }
 
+type TileWell = Map<Coordinate, Tile>
+
+type TileSelectionWell = {
+  Black : Selection;
+  White : Selection;  
+}
+
+type PieceWell = Map<Coordinate, Pieces>
+
+type RuleWell = Rules
+
 type LifeWell = {
   Player : Option<Player>;
   Duel : Option<Duel>;
   Connection : Connection;
-  Ui : Ui;
 }
   
 module Well =
+
+  type T =
+  | LifeWell of LifeWell
+  | RuleWell of RuleWell
+  | PieceWell of PieceWell
+  | TileSelectionWell of TileSelectionWell
+  | TileWell of TileWell
+  | UiWell of UiWell
   
   module Tile =
-    let create color piece selectedBy conquerableBy =
+    let create color =
       {
         Color = color;
-        Piece = piece;
-        SelectedBy = selectedBy;
-        ConquerableBy = conquerableBy;
       }
       
     let initial =
       {
         Color = White;
-        Piece = None;
-        SelectedBy = None;
-        ConquerableBy = None;
       }
       
   module Selection =
@@ -100,32 +97,6 @@ module Well =
       {
         Selected = None;
         Conquerable = List.empty;
-      }
-      
-  module Selections =
-    let create black white =
-      {
-        Black = black;
-        White = white;
-      }
-      
-    let initial =
-      {
-        Black = Selection.initial;
-        White = Selection.initial;
-      }
- 
-  module Board =
-    let create tiles selections =
-      {
-        Tiles = tiles;
-        Selections = selections;
-      }
-      
-    let initial =
-      {
-        Tiles = Map.empty;
-        Selections = Selections.initial;
       }
       
   module Player =
@@ -158,18 +129,14 @@ module Well =
     let initial = Map.empty
    
   module Duel =
-    let create duelists board rules =
+    let create duelists =
       {
         Duelists = duelists;
-        Board = board;
-        Rules = rules;
       }
       
     let initial =
       {
         Duelists = [];
-        Board = Board.initial;
-        Rules = Rules.initial;
       }
       
   module Connection =
@@ -234,7 +201,7 @@ module Well =
   module UiComponents =
     let initial = Map.empty
       
-  module Ui =
+  module UiWell =
     let create popups popupStates components =
       {
         Popups = popups;
@@ -249,13 +216,46 @@ module Well =
         Components = UiComponents.initial;
       }
       
+  module TileWell =
+    let create tiles =
+      tiles
+    
+    let initial : Map<Coordinate, Tile> =
+      Map.empty
+      
+  module TileSelectionWell =
+    let create black white =
+      {
+        Black = black;
+        White = white;
+      }
+      
+    let initial =
+      {
+        Black = Selection.initial;
+        White = Selection.initial;
+      }
+      
+  module PieceWell =
+    let create pieces =
+      pieces
+      
+    let initial : Map<Coordinate, Pieces> =
+      Map.empty
+      
+  module RuleWell =
+    let create rules =
+      rules
+      
+    let initial : Map<int, Rule> =
+      Map.empty
+      
   module LifeWell =
     let create player duel connection ui =
       {
         Player = player;
         Duel = duel;
         Connection = connection;
-        Ui = ui;
       }
       
     let initial =
@@ -263,5 +263,4 @@ module Well =
         Player = None;
         Duel = None;
         Connection = Connection.initial;
-        Ui = Ui.initial;
       }

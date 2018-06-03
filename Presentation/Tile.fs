@@ -59,48 +59,61 @@ type TileView () =
       
   [<SerializeField>]
   let mutable image : Image = null
-  
-  [<SerializeField>]
-  let mutable pieceFactory : PieceFactoryView = Unchecked.defaultof<PieceFactoryView>
-  
+
+  let mutable piece = None
   let mutable coordinate = (One, A)
+  let mutable color = White
         
   let mutable unsubscribe = fun () -> ()
-  
-  let changeColor tile =
-    Logger.log "changeColor"
-    let { Color = color; SelectedBy = selectedBy; ConquerableBy = conquerableBy } = tile
-    let maybeImage = image |> Nullable.toOption
-    match maybeImage, conquerableBy, selectedBy with
-    | Some img, None, None ->
-      Logger.log "change color by deselected"
-      img.color <- TileViewDefinitions.baseColors.[color]
-    | Some img, Some playerColor, _ ->
-      img.color <- TileViewDefinitions.conquerableColors.[playerColor].[color]
-    | Some img, None, Some playerColor ->
-      Logger.log "change color by selected"
-      img.color <- TileViewDefinitions.selectedColors.[playerColor].[color]
-    | _, _, _ ->
-      ()
-    tile
+    
+  member m.RemovePiece () =
+    Option.map (fun (p : PieceView) -> p.Remove ()) piece
+    |> ignore
+    
+  member m.MovePiece () =
+    piece <- None
       
-  let spawnPiece tile =
-    let ({ Piece = piece } : Tile) = tile 
-    Nullable.toResult pieceFactory
-    <!> (fun fact -> fact.Spawn piece coordinate)
-    <!!> Logger.warn
-    tile
+  member m.AddPiece (p : PieceView) =
+    let add () =
+      p.OnAddToTile m.MovePiece
+      p.gameObject.transform.SetParent(m.gameObject.transform, false)
+      piece <- Some p
+      
+    match piece with
+    | Some current ->
+      if (current <> p)
+      then
+        m.RemovePiece ()
+        add ()
+    | None ->
+      add ()
+    
+  member m.HighlightAsSelected playerColor =
+    Nullable.toOption image
+    |> Option.map (fun i -> i.color <- TileViewDefinitions.selectedColors.[playerColor].[color])
+    |> Option.orFinally (fun () -> Logger.warn "TileView: No image set")
+    m
+    
+  member m.HighlightAsConquerable playerColor =
+    Nullable.toOption image
+    |> Option.map (fun i -> i.color <- TileViewDefinitions.conquerableColors.[playerColor].[color])
+    |> Option.orFinally (fun () -> Logger.warn "TileView: No image set")
+    m
+    
+  member m.ResetColor () =
+    Nullable.toOption image
+    |> Option.map (fun i -> i.color <- TileViewDefinitions.baseColors.[color])
+    |> Option.orFinally (fun () -> Logger.warn "TileView: No image set")
+    m
 
   member m.OnTileChange (tile : Option<Tile>) _ =
-    Logger.log "onTileChange"
     tile
     |> Option.map m.UpdateTile
     |> Option.orFinally (fun () -> GameObject.Destroy(m))
     
   member m.UpdateTile (tile : Tile) =
-    tile
-    |> changeColor
-    |> spawnPiece
+    color <- tile.Color
+    m.ResetColor ()
     
   member m.OnClick () =
     flow <| selectClientTileWave (SelectClientTileAmplitude {

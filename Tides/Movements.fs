@@ -2,6 +2,7 @@
 
 module Movements =
   open Finders
+  open Fetchers
   open Updaters
   open Option
   open Types
@@ -16,7 +17,7 @@ module Movements =
     |> Option.defaultValue (Ok false)
     |> timer
     
-  let private filterSatisfiedRules rules well =
+  let private filterSatisfiedRules rules =
     Ok rules
 //    let (<*>) = Result.apply
 //    
@@ -31,11 +32,13 @@ module Movements =
 //    ) (Ok List.empty) rules
 //    |> timer
 
-  let calculateMovableTiles playerColor well =
-    findSelectedTileCoord playerColor well
-    >>= fun coord -> if Pool.isPlayerPiece coord well then Some coord else None
-    >>= fun coord -> findPieceMovementRules coord well <!> (Tuple.retn2 coord)
-    <!> fun (coord, rules) -> (coord, filterSatisfiedRules rules well)
+  let calculateMovableTiles playerColor tileSelectionWell =
+    let pieceWell = fetchPieceWell ()
+  
+    findSelectedTileCoord playerColor tileSelectionWell
+    >>= fun coord -> if Pool.Pieces.isPlayerPiece coord pieceWell then Some coord else None
+    >>= fun coord -> fetchPieceMovementRules coord <!> (Tuple.retn2 coord)
+    <!> fun (coord, rules) -> (coord, filterSatisfiedRules rules)
     <!> fun ((r, c), rules) -> ((Row.toInt r, Column.toInt c), rules)
     <!> (fun ((r, c), rules) ->
       rules
@@ -48,39 +51,20 @@ module Movements =
     )
     |> Option.defaultValue (Ok List.empty)
    
-  let resetMovableTiles playerColor well =
-    updateConquerableTiles playerColor (fun t -> { t with ConquerableBy = None }) well
-  
-  let setMovableTiles playerColor well =
-    findConquerableTileCoords playerColor well
-    <!> (fun coords ->
-      updateTiles (fun tiles ->
-        Matrix.updateAll coords (fun _ tile ->
-          Option.map (fun t -> { t with ConquerableBy = Some playerColor }) tile
-        ) tiles
-      ) well
-    )
-    |> Option.defaultValue well
+  let resetMovableTiles playerColor tileSelectionWell =
+    TileSelections.updateSelectionConquerable playerColor (fun _ -> List.empty) tileSelectionWell
    
-  let updateMovableTiles playerColor well =
-    Logger.now "updateMovableTiles:calculateMovableTiles"
-    match calculateMovableTiles playerColor well, Pool.isPlayer playerColor well with
+  let updateMovableTiles playerColor tileSelectionWell =
+    match calculateMovableTiles playerColor tileSelectionWell, Pool.isPlayer playerColor with
     | Ok coords, true ->
-      Logger.now "updateMovableTiles:resetMovableTiles"
-      resetMovableTiles playerColor well
-      |> Logger.nowP "updateMovableTiles:updateSelectionConquerable"
-      |> updateSelectionConquerable playerColor (fun _ -> coords)
-      |> Logger.nowP "updateMovableTiles:setMovableTiles"
-      |> setMovableTiles playerColor
-      |> Logger.nowP "updateMovableTiles:done"
+      resetMovableTiles playerColor tileSelectionWell
+      |> TileSelections.updateSelectionConquerable playerColor (fun _ -> coords)
     | Error e, _ ->
       Logger.warn e
-      well
+      tileSelectionWell
     | _, _ ->
-      well
+      tileSelectionWell
     
   let isMovableTile coord well =
-    findOwnConquerableTileCoords well
-    <!> List.contains coord
-    |> Option.defaultValue false
-    
+    fetchOwnConquerableTileCoords ()
+    |> List.contains coord

@@ -46,7 +46,7 @@ module Waves =
   let newDuelLocation = ("duel", "new")
   let newDuelWave amplitude = (newDuelLocation, amplitude)
   
-  type StartDuelAmplitude = { Duel : Duel }
+  type StartDuelAmplitude = { Duel : Duel; Tiles : TileWell; TileSelections : TileSelectionWell; Pieces : PieceWell; Rules : RuleWell }
   let startDuelLocation = ("duel", "add")
   let startDuelWave amplitude = (startDuelLocation, amplitude)
   
@@ -57,10 +57,6 @@ module Waves =
   type AddDuelistAmplitude = { Duelist : Duelist }
   let addDuelistLocation = ("duelist", "add")
   let addDuelistWave amplitude = (addDuelistLocation, amplitude)
-  
-  type SetupBoardAmplitude = { Board : Board }
-  let setupBoardLocation = ("board", "start")
-  let setupBoardWave amplitude = (setupBoardLocation, amplitude)
   
   type AddPieceAmplitude = { Piece : Pieces; Coordinate : Coordinate }
   let addPieceLocation = ("piece", "add")
@@ -131,7 +127,6 @@ module Waves =
   | StartDuelAmplitude of StartDuelAmplitude
   | JoinDuelAmplitude of JoinDuelAmplitude
   | AddDuelistAmplitude of AddDuelistAmplitude
-  | SetupBoardAmplitude of SetupBoardAmplitude
   | AddPieceAmplitude of AddPieceAmplitude
   | RemovePieceAmplitude of RemovePieceAmplitude
   | MovePieceAmplitude of MovePieceAmplitude

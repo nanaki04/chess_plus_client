@@ -61,6 +61,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Config/Env.fs" />
+    <Compile Include="Enhancers/Agent.fs" />
     <Compile Include="Logging/Logger.fs" />
     <Compile Include="Enhancers/Result.fs" />
     <Compile Include="Enhancers/Col.fs" />
@@ -78,6 +79,7 @@
     <Compile Include="Ui/Popup.fs" />
     <Compile Include="State/Well.fs" />
     <Compile Include="State/Finders.fs" />
+    <Compile Include="State/Fetchers.fs" />
     <Compile Include="State/Updaters.fs" />
     <Compile Include="Enhancers/JsonConvertions.fs" />
     <Compile Include="Waves/Waves.fs" />
@@ -103,7 +105,6 @@
     <Compile Include="Presentation/PieceFactory.fs" />
     <Compile Include="Presentation/Tile.fs" />
     <Compile Include="Presentation/Board.fs" />
-    <Compile Include="Presentation/Duel.fs" />
     <Compile Include="Presentation/Player.fs" />
     <Compile Include="Presentation/Login.fs" />
     <Compile Include="Presentation/UdpStream.fs" />
