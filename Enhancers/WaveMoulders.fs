@@ -217,6 +217,10 @@ module Moulds =
   type StartDuelMould () =
     let mutable location = Unchecked.defaultof<LocationMould>
     let mutable duel = Unchecked.defaultof<DuelDto>
+    let mutable tiles = Unchecked.defaultof<TileWellDto>
+    let mutable tileSelections = Unchecked.defaultof<TileSelectionWellDto>
+    let mutable pieces = Unchecked.defaultof<PieceWellDto>
+    let mutable rules = Unchecked.defaultof<RuleWellDto>
     
     member m.Location
       with get() = location
@@ -224,6 +228,18 @@ module Moulds =
     member m.Duel
       with get() = duel
       and set(v) = duel <- v
+    member m.Tiles
+      with get () = tiles
+      and set (v) = tiles <- v
+    member m.TileSelections
+      with get () = tileSelections
+      and set (v) = tileSelections <- v
+    member m.Pieces
+      with get () = pieces
+      and set (v) = pieces <- v
+    member m.Rules
+      with get () = rules
+      and set (v) = rules <- v
       
     static member export (wave) =
       let (loc, ampl : StartDuelAmplitude) = wave
@@ -234,11 +250,19 @@ module Moulds =
     
     interface Importable with
       member m.import () =
-        Ok (fun duel ->
+        Ok (fun duel tiles tileSelections pieces rules ->
           StartDuelAmplitude {
             Duel = duel;
+            Tiles = tiles;
+            TileSelections = tileSelections;
+            Pieces = pieces;
+            Rules = rules;
           })
         <*> DuelDto.import m.Duel
+        <*> TileWellDto.import m.Tiles
+        <*> TileSelectionWellDto.import m.TileSelections
+        <*> PieceWellDto.import m.Pieces
+        <*> RuleWellDto.import m.Rules
         <!> startDuelWave
         
   type JoinDuelMould () =
@@ -294,33 +318,6 @@ module Moulds =
           })
         <*> DuelistDto.import m.Duelist
         <!> addDuelistWave
-        
-  type SetupBoardMould () =
-    let mutable location = Unchecked.defaultof<LocationMould>
-    let mutable board = Unchecked.defaultof<BoardDto>
-    
-    member m.Location
-      with get() = location
-      and set(v) = location <- v    
-    member m.Board
-      with get() = board
-      and set(v) = board <- v  
-      
-    static member export (wave) =
-      let (loc, ampl : SetupBoardAmplitude) = wave
-      let m = new SetupBoardMould ()
-      m.Location <- LocationMould.export loc
-      m.Board <- ampl.Board |> BoardDto.export
-      m
-    
-    interface Importable with
-      member m.import () =
-        Ok (fun board ->
-          SetupBoardAmplitude {
-            Board = board;
-          })
-        <*> BoardDto.import m.Board
-        <!> setupBoardWave
 
   type AddPieceMould () =
     let mutable location = Unchecked.defaultof<LocationMould>
@@ -341,7 +338,7 @@ module Moulds =
       let (loc, ampl : AddPieceAmplitude) = wave
       let m = new AddPieceMould ()
       m.Location <- LocationMould.export loc
-      m.Piece <- Some ampl.Piece |> PieceDto.export
+      m.Piece <- ampl.Piece |> PieceDto.export
       m.Coordinate <- ampl.Coordinate |> CoordinateDto.export
       m
     
@@ -352,7 +349,7 @@ module Moulds =
             Piece = piece;
             Coordinate = coord;
           })
-        <*> (PieceDto.import m.Piece <!> fromOption |> flatten)
+        <*> PieceDto.import m.Piece
         <*> CoordinateDto.import m.Coordinate
         <!> addPieceWave
   
@@ -406,7 +403,7 @@ module Moulds =
       let (loc, ampl : MovePieceAmplitude) = wave
       let m = new MovePieceMould ()
       m.Location <- LocationMould.export loc
-      m.Piece <- Some ampl.Piece |> PieceDto.export
+      m.Piece <- ampl.Piece |> PieceDto.export
       m.From <- ampl.From |> CoordinateDto.export
       m.To <- ampl.To |> CoordinateDto.export
       m
@@ -419,7 +416,7 @@ module Moulds =
             From = from;
             To = t;
           })
-        <*> (PieceDto.import m.Piece <!> fromOption |> flatten)
+        <*> PieceDto.import m.Piece
         <*> CoordinateDto.import m.From
         <*> CoordinateDto.import m.To
         <!> movePieceWave       
@@ -447,7 +444,7 @@ module Moulds =
       let (loc, ampl : ConquerTileAmplitude) = wave
       let m = new ConquerTileMould ()
       m.Location <- LocationMould.export loc
-      m.Piece <- Some ampl.Piece |> PieceDto.export
+      m.Piece <- ampl.Piece |> PieceDto.export
       m.From <- ampl.From |> CoordinateDto.export
       m.To <- ampl.To |> CoordinateDto.export
       m
@@ -460,7 +457,7 @@ module Moulds =
             From = from;
             To = t;
           })
-        <*> (PieceDto.import m.Piece <!> fromOption |> flatten)
+        <*> PieceDto.import m.Piece
         <*> CoordinateDto.import m.From
         <*> CoordinateDto.import m.To
         <!> conquerTileWave
@@ -617,7 +614,6 @@ module Moulds =
     | l when l = startDuelLocation -> make<StartDuelMould> mould
     | l when l = joinDuelLocation -> make<JoinDuelMould> mould
     | l when l = addDuelistLocation -> make<AddDuelistMould> mould
-    | l when l = setupBoardLocation -> make<SetupBoardMould> mould
     | l when l = addPieceLocation -> make<AddPieceMould> mould
     | l when l = removePieceLocation -> make<RemovePieceMould> mould
     | l when l = movePieceLocation -> make<MovePieceMould> mould

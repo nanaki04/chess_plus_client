@@ -1,4 +1,5 @@
 ﻿namespace ChessPlus
+
 open System.Collections.Generic
 
 module DtoTypes =  
@@ -6,10 +7,7 @@ module DtoTypes =
      
   type RowDto = int      
   type ColumnDto = string      
-  type CoordinateDto = {
-    Row : int;
-    Column : string;
-  }
+  type CoordinateDto = string
   
   type DuelistTypeDto () =
     let mutable ``type`` = null
@@ -107,51 +105,35 @@ module DtoTypes =
       
   type RulesDto = IDictionary<int, RuleDto>
   
-  type PieceDto (pieceType, color) =
-    let mutable ``type`` = pieceType
-    let mutable color = color
-    let mutable rules = Unchecked.defaultof<array<int>>
-    
-    new (pieceType) =
-      PieceDto (pieceType, Unchecked.defaultof<ColorDto>)
-    new () =
-      PieceDto (Unchecked.defaultof<string>, Unchecked.defaultof<ColorDto>)
-      
+  type PieceDto () =
+    let mutable ``type`` = Unchecked.defaultof<string>
+    let mutable id = Unchecked.defaultof<int>
+    let mutable color = Unchecked.defaultof<ColorDto>
+    let mutable rules = Array.empty
+    let mutable coordinate = Unchecked.defaultof<CoordinateDto>
+
     member m.Type
       with get () = ``type``
       and set (v) = ``type`` <- v
+    member m.Id
+      with get () = id
+      and set (v) = id <- v
     member m.Color
       with get () = color
       and set (v) = color <- v
     member m.Rules
       with get () = rules
       and set (v) = rules <- v
+    member m.Coordinate
+      with get () = coordinate
+      and set (v) = coordinate <- v
 
-  type TileDto (color, piece, selectedBy, conquerableBy) =
-    let mutable color = color
-    let mutable piece = piece
-    let mutable selectedBy = selectedBy
-    let mutable conquerableBy = conquerableBy
-    
-    new (color, piece, selectedBy) =
-      TileDto (color, piece, selectedBy, Unchecked.defaultof<ColorDto>)
-    new (color, piece) =
-      TileDto (color, piece, Unchecked.defaultof<ColorDto>, Unchecked.defaultof<ColorDto>)
-    new () =
-      TileDto (Unchecked.defaultof<ColorDto>, Unchecked.defaultof<PieceDto>)
-      
+  type TileDto () =
+    let mutable color = Unchecked.defaultof<ColorDto>
+
     member m.Color
       with get () = color
       and set (v) = color <- v
-    member m.Piece
-      with get () = piece
-      and set (v) = piece <- v
-    member m.SelectedBy
-      with get () = selectedBy
-      and set (v) = selectedBy <- v 
-    member m.ConquerableBy
-      with get () = conquerableBy
-      and set (v) = conquerableBy <- v
       
   type SelectionDto () =
     let mutable selected = Unchecked.defaultof<CoordinateDto>
@@ -174,28 +156,27 @@ module DtoTypes =
     member m.White
       with get () = white
       and set (v) = white <- v
-  
-  type BoardDto = {
-    Tiles : IDictionary<int, IDictionary<string, TileDto>>;
-    Selections : SelectionsDto
-  }
+
   type PlayerDto = {
     Name : string;
   }
+  
   type DuelistDto = {
     Name : string;
     Color : ColorDto;
   }
+  
   type TerritoryDto = string
+  
   type DuelDto = {
     Duelists : DuelistDto array;
-    Board : BoardDto;
-    Rules : RulesDto;
   }
+  
   type ConnectionDto = {
     Tcp : bool;
     Udp : bool;
   }
+  
   type PopupDto = string
   
   type LoginPopupStateDto () =
@@ -227,7 +208,7 @@ module DtoTypes =
   
   type UiComponentsDto = IDictionary<string, UiComponentDto>
   
-  type UiDto () =
+  type UiWellDto () =
     let mutable popups = Array.empty;
     let mutable popupStates = Unchecked.defaultof<PopupStatesDto>
     let mutable components = Unchecked.defaultof<UiComponentsDto>
@@ -242,18 +223,33 @@ module DtoTypes =
       with get () = components
       and set (v) = components <- v
     
-  type LifeWellDto (player, duel, connection, ui) =
+  type TileWellDto = IDictionary<CoordinateDto, TileDto>
+  
+  type TileSelectionWellDto () =
+    let mutable black = Unchecked.defaultof<SelectionDto>
+    let mutable white = Unchecked.defaultof<SelectionDto>
+
+    member m.Black
+      with get () = black
+      and set (v) = black <- v
+    member m.White
+      with get () = white
+      and set (v) = white <- v
+      
+  type PieceWellDto = IDictionary<CoordinateDto, PieceDto>
+  
+  type RuleWellDto = IDictionary<int, RuleDto>
+    
+  type LifeWellDto (player, duel, connection) =
     let mutable player = player
     let mutable duel = duel
     let mutable connection = connection
-    let mutable ui = ui
   
     new () =
       LifeWellDto (
         Unchecked.defaultof<PlayerDto>,
         Unchecked.defaultof<DuelDto>,
-        Unchecked.defaultof<ConnectionDto>,
-        Unchecked.defaultof<UiDto>
+        Unchecked.defaultof<ConnectionDto>
       )
     member m.Player
       with get () = player
@@ -264,9 +260,6 @@ module DtoTypes =
     member m.Connection
       with get () = connection
       and set (v) = connection <- v
-    member m.Ui
-      with get () = ui
-      and set (v) = ui <- v
 
 module JsonConversions =
   open Types
@@ -371,20 +364,20 @@ module JsonConversions =
  
   module CoordinateDto =
     let export (row, column) =
-      {
-        Row = RowDto.export row;
-        Column = ColumnDto.export column
-      }
-      
-    let import coordinate =
-      Ok (fun row column -> (row, column))
-      <*> RowDto.import coordinate.Row
-      <*> ColumnDto.import coordinate.Column
+      RowDto.export row
+      |> string
+      |> (fun r -> r + ":" + (ColumnDto.export column))
       
     let import2 row column =
       Ok (fun row column -> (row, column))
       <*> RowDto.import row
       <*> ColumnDto.import column
+            
+    let import (coordinate : CoordinateDto) =
+      coordinate.Split ':'
+      |> function
+      | [|row; column|] -> import2 (int row) column
+      | _ -> Error ("Invalid coordinate: " + coordinate)
 
   module DuelistTypeDto =
     let export player =
@@ -605,54 +598,48 @@ module JsonConversions =
         
   module PieceDto =
     let private exportPiece<'t> pieceType (piece : Piece) =
-      let pieceDto = new PieceDto(pieceType, ColorDto.export piece.Color)
+      let pieceDto = new PieceDto ()
+      pieceDto.Id <- piece.ID
+      pieceDto.Color <- ColorDto.export piece.Color
+      pieceDto.Type <- pieceType
       pieceDto.Rules <- List.toArray piece.Rules
       pieceDto
   
     let export piece =
       match piece with
-      | Some (King king) -> exportPiece "King" king
-      | Some (Queen queen) -> exportPiece "Queen" queen
-      | Some (Rook rook) -> exportPiece "Rook" rook
-      | Some (Bishop bishop) -> exportPiece "Bishop" bishop
-      | Some (Knight knight) -> exportPiece "Knight" knight
-      | Some (Pawn pawn) -> exportPiece "Pawn" pawn
-      | _ -> Unchecked.defaultof<PieceDto>
+      | King king -> exportPiece "King" king
+      | Queen queen -> exportPiece "Queen" queen
+      | Rook rook -> exportPiece "Rook" rook
+      | Bishop bishop -> exportPiece "Bishop" bishop
+      | Knight knight -> exportPiece "Knight" knight
+      | Pawn pawn -> exportPiece "Pawn" pawn
       
     let inline private importPiece (piece : PieceDto) =
       Ok Piece.create
+      <*> Ok piece.Id
       <*> ColorDto.import piece.Color
       <*> Ok (List.ofArray piece.Rules)
+      <*> (piece.Coordinate |> Nullable.toOption |> Option.map CoordinateDto.import |> Result.pushOutward)
       
     let import (piece : PieceDto) =
       match piece.Type with
-      | "King" -> importPiece piece <!> King <!> Some
-      | "Queen" -> importPiece piece <!> Queen <!> Some
-      | "Rook" -> importPiece piece <!> Rook <!> Some
-      | "Bishop" -> importPiece piece <!> Bishop <!> Some
-      | "Knight" -> importPiece piece <!> Knight <!> Some
-      | "Pawn" -> importPiece piece <!> Pawn <!> Some
+      | "King" -> importPiece piece <!> King
+      | "Queen" -> importPiece piece <!> Queen
+      | "Rook" -> importPiece piece <!> Rook
+      | "Bishop" -> importPiece piece <!> Bishop
+      | "Knight" -> importPiece piece <!> Knight
+      | "Pawn" -> importPiece piece <!> Pawn
       | _ -> Error ("No such piece: " + piece.Type)
 
   module TileDto =
     let export (tile : Tile) =
-      new TileDto (
-        ColorDto.export tile.Color,
-        PieceDto.export tile.Piece,
-        tile.SelectedBy |> Nullable.fromOption |> Nullable.map ColorDto.export,
-        tile.ConquerableBy |> Nullable.fromOption |> Nullable.map ColorDto.export
-      )
+      let dto = new TileDto ()
+      dto.Color <- ColorDto.export tile.Color
+      dto
+      
     let import (tile : TileDto) : Result<Tile, string> =
-      let piece =
-        match Nullable.toOption tile.Piece with
-        | None -> Ok None
-        | Some pieceDto -> PieceDto.import pieceDto
-        
       Ok Tile.create
       <*> ColorDto.import tile.Color
-      <*> piece
-      <*> (importNullable tile.SelectedBy ColorDto.import)
-      <*> (importNullable tile.ConquerableBy ColorDto.import)
 
   module SelectionDto =
     let export (selection : Selection) : SelectionDto =
@@ -671,52 +658,6 @@ module JsonConversions =
       <*> (List.ofArray selection.Conquerable
         |> List.map CoordinateDto.import
         |> Result.unwrap)
-      
-  module SelectionsDto =
-    let export (selections : Selections) =
-      let dto = new SelectionsDto ()
-      dto.Black <- SelectionDto.export selections.Black
-      dto.White <- SelectionDto.export selections.White
-      dto
-      
-    let import (selections : SelectionsDto) =
-      Ok Selections.create
-      <*> SelectionDto.import selections.Black
-      <*> SelectionDto.import selections.White
-    
-  module BoardDto =
-    let export (board : Board) : BoardDto =
-      let makeTile (k, v) = (ColumnDto.export k, TileDto.export v)
-      let makeTiles (k, v) = (RowDto.export k, Map v
-        |> Col.map makeTile
-        |> Col.toDict
-      )
-      let tiles = 
-        Map board.Tiles
-        |> Col.map makeTiles
-        |> Col.toDict
-      let selections =
-        SelectionsDto.export board.Selections
-      {
-        Tiles = tiles;
-        Selections = selections;
-      }
-    
-    let import (board : BoardDto) : Result<Board, string> =
-      let tiles = 
-        Matrix.fromDict board.Tiles
-        |> Matrix.fold (fun s r c v ->
-          Ok Matrix.add
-          <*> RowDto.import r
-          <*> ColumnDto.import c
-          <*> TileDto.import v
-          <*> s
-        ) (Ok Matrix.empty)
-        
-      Ok Board.create
-      <*> tiles
-      <*> Ok Selections.initial
-      // <*> SelectionsDto.import board.Selections
       
   module PlayerDto =
     let export (player : Player) : PlayerDto =
@@ -757,15 +698,11 @@ module JsonConversions =
       let duelists = List.map DuelistDto.export duel.Duelists |> List.toArray;
       {
         Duelists = duelists;
-        Board = BoardDto.export duel.Board;
-        Rules = RulesDto.export duel.Rules;
       }
       
     let import (duel : DuelDto) =
       Ok Duel.create
       <*> (List.map DuelistDto.import (List.ofArray duel.Duelists) |> unwrap)
-      <*> BoardDto.import duel.Board
-      <*> RulesDto.import duel.Rules
       
   module ConnectionDto =
     let export (connection : Connection) : ConnectionDto =
@@ -839,35 +776,98 @@ module JsonConversions =
       |> Result.unwrapCol
       <!> Col.toMap
       
-  module UiDto =
-    let export (ui : Ui) =
-      let dto = new UiDto ()
+  module UiWellDto =
+    let export (ui : UiWell) =
+      let dto = new UiWellDto ()
       dto.Popups <- List.map PopupDto.export ui.Popups |> List.toArray
       dto.PopupStates <- PopupStatesDto.export ui.PopupStates
       dto.Components <- UiComponentsDto.export ui.Components
       dto
       
-    let import (ui : UiDto) =
-      Ok Ui.create
+    let import (ui : UiWellDto) =
+      Ok UiWell.create
       <*> (ui.Popups |> (List.ofArray >> List.map PopupDto.import >> Result.unwrap))
       <*> PopupStatesDto.import ui.PopupStates
       <*> UiComponentsDto.import ui.Components
       
+  module TileWellDto =
+    let export (tileWell : TileWell) =
+      Map tileWell
+      |> Col.map (fun (k, v) -> (CoordinateDto.export k, TileDto.export v))
+      |> Col.toDict
+      
+    let import (tileWell : TileWellDto) =
+      Dict tileWell
+      |> Col.reduce (fun c (k, v) ->
+        match CoordinateDto.import k, TileDto.import v, c with
+        | Ok k, Ok v, Ok c -> Col.add k v c |> Ok
+        | _, _, Error e -> Error e
+        | _, Error e, _ -> Error e
+        | Error e, _, _ -> Error e
+      ) (Map Map.empty |> Ok)
+      <!> Col.toMap
+   
+  module TileSelectionWellDto =
+    let export (selections : TileSelectionWell) =
+      let dto = new TileSelectionWellDto ()
+      dto.Black <- SelectionDto.export selections.Black
+      dto.White <- SelectionDto.export selections.White
+      dto
+      
+    let import (selections : TileSelectionWellDto) =
+      Ok TileSelectionWell.create
+      <*> SelectionDto.import selections.Black
+      <*> SelectionDto.import selections.White    
+  
+  module PieceWellDto =
+    let export (pieceWell : PieceWell) =
+      Map pieceWell
+      |> Col.map (fun (k, v) -> (CoordinateDto.export k, PieceDto.export v))
+      |> Col.toDict
+      
+    let import (pieceWell : PieceWellDto) =
+      Dict pieceWell
+      |> Col.reduce (fun c (k, v) ->
+        match CoordinateDto.import k, PieceDto.import v, c with
+        | Ok coord, Ok piece, Ok c -> Col.add coord piece c |> Ok
+        | _, _, Error e -> Error e
+        | _, Error e, _ -> Error e
+        | Error e, _, _ -> Error e
+      ) (Map Map.empty |> Ok)
+      <!> Col.toMap
+      
+  module RuleWellDto =
+    let export (ruleWell : RuleWell) =
+      Map ruleWell
+      |> Col.map (fun (k, v) -> (k, RuleDto.export v))
+      |> Col.toDict
+      
+    let import (ruleWell : RuleWellDto) =
+      Dict ruleWell
+      |> Col.reduce (fun c (k, v) ->
+        match RuleDto.import v, c with
+        | Ok piece, Ok c -> Col.add k piece c |> Ok
+        | _, Error e -> Error e
+        | Error e, _ -> Error e
+      ) (Map Map.empty |> Ok)
+      <!> Col.toMap  
+            
   module LifeWellDto =
     let export (lifewell : LifeWell) =
       let duel =
         match lifewell.Duel with
         | Some duel -> DuelDto.export duel
         | _ -> Unchecked.defaultof<DuelDto>
+        
       let player =
         match lifewell.Player with
         | Some player -> PlayerDto.export player
         | _ -> Unchecked.defaultof<PlayerDto>
+        
       new LifeWellDto (
         player,
         duel,
-        ConnectionDto.export lifewell.Connection,
-        UiDto.export lifewell.Ui
+        ConnectionDto.export lifewell.Connection
       )
       
     let import (lifewell : LifeWellDto) =
@@ -884,4 +884,3 @@ module JsonConversions =
       <*> player
       <*> duel
       <*> ConnectionDto.import lifewell.Connection
-      <*> UiDto.import lifewell.Ui

@@ -107,9 +107,13 @@ type Rule =
 
 type Rules = Map<int, Rule>
 
+type PieceID = int
+
 type Piece = {
+  ID : PieceID;
   Color : Color;
   Rules : int list;
+  Coordinate : Coordinate option;
 }
 
 type King = Piece
@@ -211,6 +215,9 @@ module Types =
 
     let toInt (row, column) =
       (Row.toInt row, Column.toInt column)
+      
+    let def =
+      (One, A)
 
   module Condition =
     let toString c =
@@ -225,10 +232,12 @@ module Types =
       | Defendable -> "Defendable"
       
   module Piece =
-    let create color rules =
+    let create id color rules coordinate =
       {
+        ID = id;
         Color = color;
         Rules = rules;
+        Coordinate = coordinate;
       }
       
   module Pieces =

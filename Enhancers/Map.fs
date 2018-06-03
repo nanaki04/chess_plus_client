@@ -10,3 +10,8 @@ module Map =
         else None
       | r -> r
     ) None mp
+    
+  let update k updater m =
+    match updater (Map.tryFind k m) with
+    | Some el -> Map.add k el m
+    | None -> Map.remove k m
