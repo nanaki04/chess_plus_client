@@ -23,16 +23,18 @@ module Pool =
       duelist.Color = playerColor
     | _ ->
       false
+      
+  let private findTarget (x, y) (row, column) =
+     (Row.toInt row, Column.toInt column)
+     |> fun (r, c) -> (r + x, c + y)
+     |> fun (r, c) -> (Row.fromInt r, Column.fromInt c)
+     |> function
+       | (Ok row, Ok col) ->
+         Some (row, col)
+       | _ ->
+         None 
     
   let findTargetCoord rule =
-    let findTarget (x, y) (row, column) =
-      (Row.toInt row, Column.toInt column)
-      |> fun (r, c) -> (r + x, c + y)
-      |> fun (r, c) -> (Row.fromInt x, Column.fromInt c)
-      |> function
-        | (Ok row, Ok col) -> Some (row, col)
-        | _ -> None
-  
     match rule, fetchOwnSelectedTileCoords () with
     | MoveRule { Offset = offset; }, Some coordinate ->
       findTarget offset coordinate
@@ -49,13 +51,26 @@ module Pool =
       
     let select coord playerColor well =
       updateSelected playerColor (fun _ -> Some coord) well
+      
+    let findTargetCoord rule well =
+      match rule, findOwnSelectedTileCoords well (fetchLifeWell ()) with
+      | MoveRule { Offset = offset; }, Some coordinate ->
+        findTarget offset coordinate
+      | ConquerRule { Offset = offset; }, Some coordinate ->
+        findTarget offset coordinate
+      | _, _ ->
+        None
+      
+    let findTargetPiece rule well =
+      findTargetCoord rule well
+      >>= fetchPiece
 
   module Pieces =
     open Updaters.Pieces
       
     let findTargetPiece rule well =
       findTargetCoord rule
-      <!> fun c -> findPiece c well
+      >>= fun c -> findPiece c well
                  
     let isPlayerPiece coord well =
       match findPiece coord well, fetchClientDuelist () with

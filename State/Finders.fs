@@ -27,6 +27,20 @@ module Finders =
     findDuelists lifeWell
     >>= List.tryFind (fun c -> c = color)
     
+  let findPlayerColor lifeWell =
+    match findPlayer lifeWell, findDuelists lifeWell with
+    | Some { Name = name }, Some duelists ->
+      List.tryFind (fun (d : Duelist) -> d.Name = name) duelists
+      <!> fun d -> d.Color
+    | _, _ ->
+      None
+      
+  let findOpponentColor lifeWell =
+    match findPlayerColor lifeWell with
+    | Some White -> Some Black
+    | Some Black -> Some White
+    | _ -> None
+    
   let findWhiteSelections well =
     well.White
     
@@ -77,3 +91,7 @@ module Finders =
     well
     |> findUiComponents
     |> Map.tryFind id
+    
+  let findOwnSelectedTileCoords tileSelectionWell lifeWell =
+    findPlayerColor lifeWell
+    >>= (fun c -> findSelectedTileCoord c tileSelectionWell)

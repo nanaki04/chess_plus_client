@@ -96,10 +96,7 @@ module Fetchers =
     match fetchPlayer (), fetchDuelists () with
     | Some { Name = name }, Some duelists ->
       List.tryFind (fun (d : Duelist) -> d.Name = name) duelists
-    | x, y ->
-      Logger.warn "fetchClientDuelist ERROR"
-      Logger.warn x
-      Logger.warn y
+    | _, _ ->
       None
       
   let fetchOpponentDuelist () =

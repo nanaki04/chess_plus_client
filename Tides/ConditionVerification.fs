@@ -5,6 +5,7 @@ type ConditionResult =
 | IntValue of int
 
 module ConditionVerification =
+  open Fetchers
   open Finders
   open Option
   open Types
@@ -53,74 +54,54 @@ module ConditionVerification =
 //      Conditional false
 //      |> timer
 //      
-//  let private isOccupiedBy duelistType rule well =
-//    let timer = Logger.time "isOccupiedBy"
-//    match duelistType, findTargetPiece rule well with
-//    | Any, Some piece ->
-//      Conditional true
-//      |> timer
-//      
-//    | Self, Some piece ->
-//      let occBySelfTimer = Logger.time "occBySelf"
-//      findClientDuelist well
-//      <!> (fun self ->
-//        Types.Pieces.map (fun p ->
-//          p.Color = self.Color |> Conditional
-//        ) piece
-//      )
-//      |> Option.defaultValue (Conditional false)
-//      |> timer
-//      |> occBySelfTimer
-//      
-//    | Other, Some piece ->
-//      let occupiedByOtherTimer = Logger.time "occByOther"
-//      findClientDuelist well
-//      <!> (fun self ->
-//        Types.Pieces.map (fun p ->
-//          p.Color <> self.Color |> Conditional
-//        ) piece
-//      )
-//      |> Option.defaultValue (Conditional false)
-//      |> timer
-//      |> occupiedByOtherTimer
-//      
-//    | Player color, Some piece ->
-//      let occupiedByAnyTimer = Logger.time "occByAny"
-//      Types.Pieces.map (fun p ->
-//        p.Color = color |> Conditional
-//      ) piece
-//      |> timer
-//      |> occupiedByAnyTimer
-//      
-//    | _, _ ->
-//      Conditional false
-//      |> timer
-//
-//  let isMet condition rule well =
-//    let timer = Logger.time "isMet"
-//    match condition with
-//    | Always -> 
-//      Conditional true
-//      |> timer
-//      
-//    | PathBlocked ->
-//      Conditional false
-//      // isPathBlocked rule well
-//      |> timer
-//      
-//    | OccupiedBy duelist ->
-//      Conditional false
-//      // isOccupiedBy duelist rule well
-//      |> timer
-//      
-//    | ExposesKing ->
-//      Conditional false // TODO
-//      |> timer
-//            
-//    | MoveCount ->
-//      IntValue 2 // TODO
-//      |> timer
-//      
-//    | _ ->
-//      Conditional true
-//      |> timer
+  let private isOccupiedBy duelistType rule tileSelectionWell =
+    match duelistType, Pool.TileSelections.findTargetPiece rule tileSelectionWell with
+    | Any, Some piece ->
+      Conditional true
+      
+    | Self, Some piece ->
+      fetchClientDuelist ()
+      <!> (fun self ->
+        Types.Pieces.map (fun p ->
+          p.Color = self.Color |> Conditional
+        ) piece
+      )
+      |> Option.defaultValue (Conditional false)
+      
+    | Other, Some piece ->
+      fetchOpponentDuelist ()
+      <!> (fun other ->
+        Types.Pieces.map (fun p ->
+          p.Color = other.Color |> Conditional
+        ) piece
+      )
+      |> Option.defaultValue (Conditional false)
+      
+    | Player color, Some piece ->
+      Types.Pieces.map (fun p ->
+        p.Color = color |> Conditional
+      ) piece
+      
+    | _, _ ->
+      Conditional false
+
+  let isMet condition rule tileSelectionWell =
+    match condition with
+    | Always -> 
+      Conditional true
+      
+    | PathBlocked ->
+      Conditional false
+      // isPathBlocked rule well
+      
+    | OccupiedBy duelist ->
+      isOccupiedBy duelist rule tileSelectionWell
+      
+    | ExposesKing ->
+      Conditional false // TODO
+            
+    | MoveCount ->
+      IntValue 2 // TODO
+      
+    | _ ->
+      Conditional true

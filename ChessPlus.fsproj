@@ -78,10 +78,10 @@
     <Compile Include="ChessPlus.fs" />
     <Compile Include="Ui/Popup.fs" />
     <Compile Include="State/Well.fs" />
+    <Compile Include="Enhancers/JsonConvertions.fs" />
     <Compile Include="State/Finders.fs" />
     <Compile Include="State/Fetchers.fs" />
     <Compile Include="State/Updaters.fs" />
-    <Compile Include="Enhancers/JsonConvertions.fs" />
     <Compile Include="Waves/Waves.fs" />
     <Compile Include="Enhancers/WaveMoulders.fs" />
     <Compile Include="Logging/WellLogger.fs" />
