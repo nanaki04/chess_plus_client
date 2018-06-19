@@ -69,6 +69,52 @@ module Finders =
   let findPieceById id well =
     Map.first (fun k v -> Types.Pieces.map (fun p -> p.ID = id) v) well
     
+  let findKings pieceWell =
+    Map.fold (fun kings _ piece ->
+      match piece with
+      | King k -> (King k)::kings
+      | _ -> kings
+    ) List.empty pieceWell
+   
+  let private findWhitePiece pieceList =
+    List.find (fun p ->
+      Types.Pieces.map (fun p -> p.Color) p
+      |> (fun c -> c = White)
+    ) pieceList
+    
+  let private findBlackPiece pieceList =
+    List.find (fun p ->
+      Types.Pieces.map (fun p -> p.Color) p
+      |> (fun c -> c = Black)
+    ) pieceList  
+    
+  let findWhiteKing : (PieceWell -> Pieces) =
+    findKings >> findWhitePiece
+    
+  let findBlackKing : (PieceWell -> Pieces) =
+    findKings >> findBlackPiece
+    
+  let findWhiteKingCoord pieceWell =
+    findWhiteKing pieceWell
+    |> Types.Pieces.map (fun p -> p.Coordinate)
+    
+  let findBlackKingCoord pieceWell =
+    findWhiteKing pieceWell
+    |> Types.Pieces.map (fun p -> p.Coordinate)
+    
+  let findPiecesByColor color pieceWell =
+    Map.fold (fun whitePieces _ piece ->
+      if Types.Pieces.map (fun p -> p.Color = color) piece
+      then piece::whitePieces
+      else whitePieces
+    ) List.empty pieceWell
+    
+  let findWhitePieces : (PieceWell -> Pieces list) =
+    findPiecesByColor White
+    
+  let findBlackPieces : (PieceWell -> Pieces list) =
+    findPiecesByColor Black
+        
   let findPieceRuleIDs coord well =
     findPiece coord well
     <!> Types.Pieces.map (fun p -> p.Rules)   

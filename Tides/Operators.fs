@@ -1,7 +1,6 @@
 ﻿namespace ChessPlus
 
 module Operators =
-  open ConditionVerification
   open Option
   open Types
 

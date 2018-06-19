@@ -141,6 +141,10 @@ type StreamState =
 
 type Location = string * string
 
+type ConditionResult =
+| Conditional of bool
+| IntValue of int
+
 module Types =
   module Column =
     let fromInt x =
@@ -218,6 +222,16 @@ module Types =
       
     let def =
       (One, A)
+      
+    let getOffset coord1 coord2 =
+      let (x1, y1) = toInt coord1
+      let (x2, y2) = toInt coord2
+      (x2 - x1, y2 - y1)
+      
+    let applyOffset (x, y) coord =
+      toInt coord
+      |> (fun (r, c) -> (r + x, c + y))
+      |> fromInt
 
   module Condition =
     let toString c =
@@ -241,7 +255,7 @@ module Types =
       }
       
   module Pieces =
-    let map f p =
+    let map (f : Piece -> 'a) p =
       match p with
       | King p -> f p
       | Queen p -> f p
@@ -249,6 +263,15 @@ module Types =
       | Bishop p -> f p
       | Knight p -> f p
       | Pawn p -> f p
+      
+    let update (f : Piece -> Piece) p =
+      match p with
+      | King p -> f p |> King
+      | Queen p -> f p |> Queen
+      | Rook p -> f p |> Rook
+      | Bishop p -> f p |> Bishop
+      | Knight p -> f p |> Knight
+      | Pawn p -> f p |> Pawn
       
   module Location =
     let toString (d, i) =
@@ -258,4 +281,10 @@ module Types =
     let map f r =
       match r with
       | MoveRule r -> Some (f r)
+      | _ -> None
+      
+  module ConquerRule =
+    let map f r =
+      match r with
+      | ConquerRule r -> Some (f r)
       | _ -> None

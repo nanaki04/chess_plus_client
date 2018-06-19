@@ -78,6 +78,15 @@ module Pool =
         Types.Pieces.map (fun p -> p.Color = playerColor) p
       | _, _ ->
         false
+        
+    let movePiece piece toCoord well =
+      let p = Types.Pieces.update (fun p -> { p with Coordinate = Some toCoord }) piece
+      Types.Pieces.map (fun p -> p.Coordinate) piece
+      <!> (fun fromCoord ->   
+        updatePiece fromCoord (fun _ -> None) well
+        |> updatePiece toCoord (fun _ -> Some p)
+      )
+      |> Option.defaultValue well
 
   module UI =
     open Updaters.UI

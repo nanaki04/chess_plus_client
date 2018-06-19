@@ -87,10 +87,12 @@
     <Compile Include="Logging/WellLogger.fs" />
     <Compile Include="Logging/WaveLogger.fs" />
     <Compile Include="Tides/Pool.fs" />
-    <Compile Include="Tides/ConditionVerification.fs" />
     <Compile Include="Tides/Operators.fs" />
+    <Compile Include="Tides/ConditionVerification.fs" />
     <Compile Include="Tides/Clauses.fs" />
+    <Compile Include="Tides/Rules.fs" />
     <Compile Include="Tides/Movements.fs" />
+    <Compile Include="Tides/Conquers.fs" />
     <Compile Include="Tides/Tides.fs" />
     <Compile Include="Flow/Flow.fs" />
     <Compile Include="Flow/Observers.fs" />

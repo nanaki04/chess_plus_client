@@ -64,6 +64,15 @@ type LifeWell = {
   Duel : Option<Duel>;
   Connection : Connection;
 }
+
+type WellCollection = {
+  LifeWell : Option<LifeWell>;
+  RuleWell : Option<RuleWell>;
+  PieceWell : Option<PieceWell>;
+  TileSelectionWell : Option<TileSelectionWell>;
+  TileWell : Option<TileWell>;
+  UiWell : Option<UiWell>;
+}
   
 module Well =
 
@@ -263,4 +272,25 @@ module Well =
         Player = None;
         Duel = None;
         Connection = Connection.initial;
+      }
+      
+  module WellCollection =
+    let create lifeWell ruleWell pieceWell tileSelectionWell tileWell uiWell =
+      {
+        LifeWell = lifeWell;
+        RuleWell = ruleWell;
+        PieceWell = pieceWell;
+        TileSelectionWell = tileSelectionWell;
+        TileWell = tileWell;
+        UiWell = uiWell;
+      }
+      
+    let initial =
+      {
+        LifeWell = None;
+        RuleWell = None;
+        PieceWell = None;
+        TileSelectionWell = None;
+        TileWell = None;
+        UiWell = None;
       }

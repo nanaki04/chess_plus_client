@@ -1,59 +1,52 @@
 ﻿namespace ChessPlus
 
-type ConditionResult =
-| Conditional of bool
-| IntValue of int
-
 module ConditionVerification =
   open Fetchers
   open Finders
   open Option
   open Types
+  
+  // MEMO: made use of mutable functions to realize recursion across modules
+  // TODO find a better way
+  let mutable canConquerBlackKing = fun (_ : PieceWell) -> false  
+  let mutable canConquerWhiteKing = fun (_ : PieceWell) -> false
 
-//  let private isPathBlocked rule well =
-//    let timer = Logger.time "isPathBlocked"
-//    let isBlocked (x, y) (row, column) =
-//      let isBlockedTimer = Logger.time "isBlocked"
-//      let rowInt = Row.toInt row
-//      let colInt = Column.toInt column
-//      let signX = sign x
-//      let signY = sign y
-//      let absX = abs x
-//      let absY = abs y
-//      let steps = (max absX absY) - 1
-//      let factorX = (float absX - 1.0) / float steps |> max 0.0
-//      let factorY = (float absY - 1.0) / float steps |> max 0.0
-//      
-//      Seq.init steps (fun step ->
-//        let seqTimer = Logger.time "Init Seq"
-//        (float step, float step)
-//        |> fun (x, y) -> (factorX * x, factorY * y)
-//        |> fun (x, y) -> (round x, round y)
-//        |> fun (x, y) -> (int x, int x)
-//        |> fun (x, y) -> (signX * x, signY * y)
-//        |> fun (x, y) -> (rowInt + x, colInt + y)
-//        |> fun (x, y) -> (Row.fromInt x, Column.fromInt y)
-//        |> function
-//          | (Ok row, Ok col) -> Pool.isOccupied (row, col) well
-//          | _ -> false
-//        |> seqTimer
-//      )
-//      |> Seq.tryFind id
-//      |> Option.defaultValue false
-//      |> Conditional
-//      |> isBlockedTimer
-//          
-//    match rule, (findOwnSelectedTile well) with
-//    | MoveRule { Offset = offset; }, Some (coordinate, _) ->
-//      isBlocked offset coordinate
-//      |> timer
-//    | ConquerRule { Offset = offset; }, Some (coordinate, _) ->
-//      isBlocked offset coordinate
-//      |> timer
-//    | _, _ ->
-//      Conditional false
-//      |> timer
-//      
+  let private isPathBlocked rule well =
+    let isBlocked (x, y) (row, column) =
+      let rowInt = Row.toInt row
+      let colInt = Column.toInt column
+      let signX = sign x
+      let signY = sign y
+      let absX = abs x
+      let absY = abs y
+      let steps = (max absX absY) - 1
+      let factorX = (float absX - 1.0) / float steps |> max 0.0
+      let factorY = (float absY - 1.0) / float steps |> max 0.0
+      
+      Seq.init steps (fun step ->
+        (float step, float step)
+        |> fun (x, y) -> (factorX * x, factorY * y)
+        |> fun (x, y) -> (round x, round y)
+        |> fun (x, y) -> (int x, int x)
+        |> fun (x, y) -> (signX * x, signY * y)
+        |> fun (x, y) -> (rowInt + x, colInt + y)
+        |> fun (x, y) -> (Row.fromInt x, Column.fromInt y)
+        |> function
+          | (Ok row, Ok col) -> Pool.isOccupied (row, col)
+          | _ -> false
+      )
+      |> Seq.tryFind id
+      |> Option.defaultValue false
+      |> Conditional
+          
+    match rule, (findOwnSelectedTileCoords well (fetchLifeWell ())) with
+    | MoveRule { Offset = offset; }, Some coordinate ->
+      isBlocked offset coordinate
+    | ConquerRule { Offset = offset; }, Some coordinate ->
+      isBlocked offset coordinate
+    | _, _ ->
+      Conditional false
+      
   let private isOccupiedBy duelistType rule tileSelectionWell =
     match duelistType, Pool.TileSelections.findTargetPiece rule tileSelectionWell with
     | Any, Some piece ->
@@ -85,23 +78,39 @@ module ConditionVerification =
     | _, _ ->
       Conditional false
 
-  let isMet condition rule tileSelectionWell =
-    match condition with
-    | Always -> 
+  let isMet (operator, condition) rule isSimulation tileSelectionWell =
+    match condition, isSimulation with
+    | Always, _ -> 
       Conditional true
+      |> Operators.isMet operator
       
-    | PathBlocked ->
-      Conditional false
-      // isPathBlocked rule well
+    | PathBlocked, _ ->
+      isPathBlocked rule tileSelectionWell
+      |> Operators.isMet operator
       
-    | OccupiedBy duelist ->
+    | OccupiedBy duelist, _ ->
       isOccupiedBy duelist rule tileSelectionWell
+      |> Operators.isMet operator
       
-    | ExposesKing ->
-      Conditional false // TODO
+    | ExposesKing, true ->
+      Ok true
+      
+    | ExposesKing, false ->
+      match fetchClientDuelistColor () with
+      | Some White ->
+        canConquerWhiteKing (fetchPieceWell ())
+        |> Conditional
+        |> Operators.isMet operator
+      | Some Black ->
+        canConquerBlackKing (fetchPieceWell ())
+        |> Conditional
+        |> Operators.isMet operator
+      | _ ->
+        Ok true
             
-    | MoveCount ->
+    | MoveCount, _ ->
       IntValue 2 // TODO
+      |> Operators.isMet operator
       
     | _ ->
-      Conditional true
+      Ok false

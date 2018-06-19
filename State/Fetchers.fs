@@ -106,6 +106,10 @@ module Fetchers =
     | _, _ ->
       None
       
+  let fetchClientDuelistColor () =
+    fetchClientDuelist ()
+    <!> (fun d -> d.Color)
+      
   let fetchOwnSelectedTileCoords () =
     match fetchClientDuelist () with
     | Some { Color = color } ->

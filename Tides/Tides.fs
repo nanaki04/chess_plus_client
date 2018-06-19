@@ -236,10 +236,9 @@ module Tides =
     );
     
     pieceTide<ConquerTileAmplitude> conquerTileLocation (fun amplitude well ->
-      let ({ Piece = piece; From = from; To = t } : ConquerTileAmplitude) = amplitude
+      let ({ Piece = piece; To = t } : ConquerTileAmplitude) = amplitude
       
-      Pieces.updatePiece from (fun _ -> None) well
-      |> Pieces.updatePiece t (fun _ -> Some piece)
+      Pool.Pieces.movePiece piece t well
     );
  
   ]
