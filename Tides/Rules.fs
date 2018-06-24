@@ -75,4 +75,8 @@ module RuleApplication =
   let projectRules rules piece wellCollection =
     List.fold (fun well rule ->
       Result.bind (projectRule rule piece) well
-    ) (Ok wellCollection) rules      
+    ) (Ok wellCollection) rules     
+    
+  // TODO refactor
+  let init () =
+    ConditionVerification.applyRule <- applyRule 

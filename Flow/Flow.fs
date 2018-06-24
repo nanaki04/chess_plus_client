@@ -30,7 +30,7 @@ module Flow =
     
   Fetchers.fetchTileWell <- fetchTileWell
   
-  let (private doFlowTileSelectionWell, fetchTileSelectionWell, guardTileSelectionWell) = invoke TileSelectionWell.initial tileSelectionTides [] []
+  let (private doFlowTileSelectionWell, fetchTileSelectionWell, guardTileSelectionWell) = invoke TileSelectionWell.initial tileSelectionTides [] [tileSelectionWellLogger]
   let flowTileSelection wave =
     doFlowTileSelectionWell wave
     wave
@@ -60,6 +60,10 @@ module Flow =
     >> flowRule
     >> ignore
     >> Ok
+  
+  // TODO refactor  
+  Conquers.init ()
+  RuleApplication.init ()
     
 //  let mutable private queue : (unit -> unit) list = []
 //  

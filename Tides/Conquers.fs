@@ -50,8 +50,10 @@ module Conquers =
     <!> fun coord -> (fetchPieceConquerRules coord, findPiece coord pieceWell)
     |> function
     | Some (Some rules, piece) ->
-      projectRules rules piece wellCollection
-      |> getTileSelectionWell
+      filterSatisfiedRules rules isSimulation tileSelectionWell
+      |> Result.map (fun r -> projectRules r piece wellCollection)
+      |> Result.map getTileSelectionWell
+      |> Result.expect tileSelectionWell
     | _ ->
       Ok wellCollection
       |> getTileSelectionWell
@@ -62,17 +64,32 @@ module Conquers =
     else tileSelectionWell
         
   let canConquer coord isSimulation piece =
+    Logger.warn "can conquer"
     piece.Coordinate
     >>= (fun pieceCoord -> 
       let offset = Types.Coordinate.getOffset pieceCoord coord
       fetchPieceConquerRules pieceCoord
+      <!> List.filter (fun rule ->
+        match rule with
+        | ConquerRule { Offset = ruleOffset } -> ruleOffset = offset
+        | _ -> false      
+      )
+      <!> (fun rules ->
+        Logger.log rules.Length
+        rules)
       <!> (fun rules -> filterSatisfiedRules rules isSimulation (fetchTileSelectionWell ()))
       <!> Result.map List.length
     )
     |> function
-    | Some (Ok 0) -> false
-    | Some (Ok _) -> true
-    | _ -> false
+    | Some (Ok 0) ->
+      Logger.warn "Some 0"
+      false
+    | Some (Ok _) ->
+      Logger.warn "Some"
+      true
+    | _ ->
+      Logger.error "None"
+      false
     
   let canAnyConquer coord pieces =
     List.fold (fun conquerable piece ->
@@ -91,5 +108,7 @@ module Conquers =
     <!> (fun kingCoord -> canAnyConquer kingCoord (findBlackPieces pieceWell))
     |> Option.defaultValue false
     
-  ConditionVerification.canConquerBlackKing <- canConquerBlackKing
-  ConditionVerification.canConquerWhiteKing <- canConquerWhiteKing
+  // TODO refactor  
+  let init () =
+    ConditionVerification.canConquerBlackKing <- canConquerBlackKing
+    ConditionVerification.canConquerWhiteKing <- canConquerWhiteKing

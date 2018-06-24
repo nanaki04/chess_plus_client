@@ -10,6 +10,7 @@ module ConditionVerification =
   // TODO find a better way
   let mutable canConquerBlackKing = fun (_ : PieceWell) -> false  
   let mutable canConquerWhiteKing = fun (_ : PieceWell) -> false
+  let mutable applyRule = fun (_ : Rule) (_ : Pieces option) (wellCollection : WellCollection) -> Ok wellCollection : Result<WellCollection, string>
 
   let private isPathBlocked rule well =
     let isBlocked (x, y) (row, column) =
@@ -23,11 +24,12 @@ module ConditionVerification =
       let factorX = (float absX - 1.0) / float steps |> max 0.0
       let factorY = (float absY - 1.0) / float steps |> max 0.0
       
-      Seq.init steps (fun step ->
-        (float step, float step)
+      seq { 1..steps }
+      |> Seq.map (fun step ->
+        (float (step), float (step))
         |> fun (x, y) -> (factorX * x, factorY * y)
         |> fun (x, y) -> (round x, round y)
-        |> fun (x, y) -> (int x, int x)
+        |> fun (x, y) -> (int x, int y)
         |> fun (x, y) -> (signX * x, signY * y)
         |> fun (x, y) -> (rowInt + x, colInt + y)
         |> fun (x, y) -> (Row.fromInt x, Column.fromInt y)
@@ -44,6 +46,8 @@ module ConditionVerification =
       isBlocked offset coordinate
     | ConquerRule { Offset = offset; }, Some coordinate ->
       isBlocked offset coordinate
+    | _, None ->
+      Conditional true
     | _, _ ->
       Conditional false
       
@@ -87,25 +91,51 @@ module ConditionVerification =
     | PathBlocked, _ ->
       isPathBlocked rule tileSelectionWell
       |> Operators.isMet operator
+
+    | OccupiedBy _, true ->
+      // TODO too knowledgable and too specific
+      Ok true
       
-    | OccupiedBy duelist, _ ->
+    | OccupiedBy duelist, false ->
       isOccupiedBy duelist rule tileSelectionWell
       |> Operators.isMet operator
       
     | ExposesKing, true ->
-      Ok true
+      Ok false
       
     | ExposesKing, false ->
+      let simulateRule pieceWell =
+        let simulate () =
+          let wellCollection = { Well.WellCollection.initial with PieceWell = Some pieceWell }
+          findOwnSelectedPiece tileSelectionWell pieceWell (fetchLifeWell ())
+          |> (fun p -> applyRule rule p wellCollection)
+          |> function
+          | Ok { PieceWell = Some pw } -> pw
+          | _ -> pieceWell 
+      
+        match rule with
+        | MoveRule r ->
+          simulate ()
+        | ConquerRule r ->
+          simulate ()
+        | _ ->
+          pieceWell
+    
       match fetchClientDuelistColor () with
       | Some White ->
-        canConquerWhiteKing (fetchPieceWell ())
+        Logger.warn "Exposes white king"
+        
+        canConquerWhiteKing (simulateRule (fetchPieceWell ()))
         |> Conditional
         |> Operators.isMet operator
       | Some Black ->
-        canConquerBlackKing (fetchPieceWell ())
+        Logger.warn "Exposes black king"
+        
+        canConquerBlackKing (simulateRule (fetchPieceWell ()))
         |> Conditional
         |> Operators.isMet operator
       | _ ->
+        Logger.warn "ExposesKing invalid color"
         Ok true
             
     | MoveCount, _ ->

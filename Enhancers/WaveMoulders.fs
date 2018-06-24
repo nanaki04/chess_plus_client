@@ -346,7 +346,7 @@ module Moulds =
       member m.import () =
        Ok (fun piece coord ->
           AddPieceAmplitude {
-            Piece = piece;
+            Piece = Types.Pieces.update (fun p -> { p with Coordinate = Some coord }) piece;
             Coordinate = coord;
           })
         <*> PieceDto.import m.Piece
@@ -412,11 +412,11 @@ module Moulds =
       member m.import () =
         Ok (fun piece from t ->
           MovePieceAmplitude {
-            Piece = piece;
+            Piece = Types.Pieces.update (fun p -> { p with Coordinate = Some from }) piece;
             From = from;
             To = t;
           })
-        <*> PieceDto.import m.Piece
+        <*> PieceDto.import  m.Piece
         <*> CoordinateDto.import m.From
         <*> CoordinateDto.import m.To
         <!> movePieceWave       
@@ -453,7 +453,7 @@ module Moulds =
       member m.import () =
         Ok (fun piece from t ->
           ConquerTileAmplitude {
-            Piece = piece;
+            Piece = Types.Pieces.update (fun p -> { p with Coordinate = Some from }) piece;
             From = from;
             To = t;
           })

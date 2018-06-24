@@ -191,7 +191,7 @@ module Tides =
       Pool.TileSelections.deselect playerColor well
       |> Pool.TileSelections.select coord playerColor
       |> Movements.updateMovableTiles playerColor
-      // TODO |> Conquers.updateConquerableTiles playerColor
+      |> Conquers.updateConquerableTiles playerColor false
     );
     
     tileSelectionTide<DefaultAmplitude> deselectTileLocation (fun amplitude well ->
@@ -203,10 +203,18 @@ module Tides =
     
     tileSelectionTide<ConfirmDeselectTileAmplitude> confirmDeselectTileLocation (fun amplitude well ->
       let ({ Player = playerColor } : ConfirmDeselectTileAmplitude) = amplitude
+      
       Movements.resetMovableTiles playerColor well
       |> Pool.TileSelections.deselect playerColor
     );
-       
+    
+    tileSelectionTide<MovePieceAmplitude> movePieceLocation (fun amplitude well ->
+      let ({ Piece = piece } : MovePieceAmplitude) = amplitude
+      let color = Types.Pieces.map (fun p -> p.Color) piece
+      
+      Movements.resetMovableTiles color well
+      |> Pool.TileSelections.deselect color
+    );       
   ]
   
   let pieceTide<'A> = makeTide<'A, PieceWell>
@@ -225,14 +233,6 @@ module Tides =
     pieceTide<RemovePieceAmplitude> removePieceLocation (fun amplitude well ->
       let ({ Coordinate = coord } : RemovePieceAmplitude) = amplitude
       Pieces.updatePiece coord (fun _ -> None) well
-    );
-    
-    // TODO send to server
-    // @depricated ?
-    pieceTide<MovePieceAmplitude> movePieceLocation (fun amplitude well ->
-      let ({ Piece = piece; From = from; To = t } : MovePieceAmplitude) = amplitude
-      Pieces.updatePiece from (fun _ -> None) well
-      |> Pieces.updatePiece t (fun _ -> Some piece)
     );
     
     pieceTide<ConquerTileAmplitude> conquerTileLocation (fun amplitude well ->

@@ -50,8 +50,10 @@ module Movements =
     <!> fun coord -> (fetchPieceMovementRules coord, findPiece coord pieceWell)
     |> function
     | Some (Some rules, piece) ->
-      projectRules rules piece wellCollection
-      |> getTileSelectionWell
+      filterSatisfiedRules rules tileSelectionWell
+      |> Result.map (fun r -> projectRules r piece wellCollection)
+      |> Result.map getTileSelectionWell
+      |> Result.expect tileSelectionWell
     | _ ->
       Ok wellCollection
       |> getTileSelectionWell
@@ -61,8 +63,11 @@ module Movements =
    
   let updateMovableTiles playerColor tileSelectionWell =
     if Pool.isPlayer playerColor
-    then calculateMovableTiles playerColor tileSelectionWell
-    else tileSelectionWell
+    then
+      resetMovableTiles playerColor tileSelectionWell
+      |> calculateMovableTiles playerColor
+    else
+      tileSelectionWell
     
   let isMovableTile coord well =
     fetchOwnConquerableTileCoords ()

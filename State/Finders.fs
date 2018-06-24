@@ -99,7 +99,7 @@ module Finders =
     |> Types.Pieces.map (fun p -> p.Coordinate)
     
   let findBlackKingCoord pieceWell =
-    findWhiteKing pieceWell
+    findBlackKing pieceWell
     |> Types.Pieces.map (fun p -> p.Coordinate)
     
   let findPiecesByColor color pieceWell =
@@ -141,3 +141,7 @@ module Finders =
   let findOwnSelectedTileCoords tileSelectionWell lifeWell =
     findPlayerColor lifeWell
     >>= (fun c -> findSelectedTileCoord c tileSelectionWell)
+    
+  let findOwnSelectedPiece tileSelectionWell pieceWell lifeWell =
+    findOwnSelectedTileCoords tileSelectionWell lifeWell
+    >>= (fun c -> findPiece c pieceWell)

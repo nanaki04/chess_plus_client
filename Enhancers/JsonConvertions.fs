@@ -829,7 +829,8 @@ module JsonConversions =
       Dict pieceWell
       |> Col.reduce (fun c (k, v) ->
         match CoordinateDto.import k, PieceDto.import v, c with
-        | Ok coord, Ok piece, Ok c -> Col.add coord piece c |> Ok
+        | Ok coord, Ok piece, Ok c ->
+          Col.add coord (Types.Pieces.update (fun p -> { p with Coordinate = Some coord }) piece) c |> Ok
         | _, _, Error e -> Error e
         | _, Error e, _ -> Error e
         | Error e, _, _ -> Error e

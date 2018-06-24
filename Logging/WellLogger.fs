@@ -19,7 +19,9 @@ module WellLogger =
       |> export
       |> log
     | TileSelectionWell w ->
-      ()
+      TileSelectionWellDto.export w
+      |> export
+      |> log
     | TileWell w ->
       ()
     | UiWell w ->
@@ -40,4 +42,9 @@ module WellLogger =
   let pieceWellLogger next well =
     let refreshedWell = next well
     wellLogger (PieceWell well) (PieceWell refreshedWell)
+    refreshedWell
+    
+  let tileSelectionWellLogger next well =
+    let refreshedWell = next well
+    wellLogger (TileSelectionWell well) (TileSelectionWell refreshedWell)
     refreshedWell

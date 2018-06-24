@@ -80,11 +80,10 @@ module Pool =
         false
         
     let movePiece piece toCoord well =
-      let p = Types.Pieces.update (fun p -> { p with Coordinate = Some toCoord }) piece
       Types.Pieces.map (fun p -> p.Coordinate) piece
-      <!> (fun fromCoord ->   
+      <!> (fun fromCoord ->
         updatePiece fromCoord (fun _ -> None) well
-        |> updatePiece toCoord (fun _ -> Some p)
+        |> updatePiece toCoord (fun _ -> Some (Types.Pieces.update (fun p -> { p with Coordinate = Some toCoord }) piece))
       )
       |> Option.defaultValue well
 
