@@ -63,7 +63,7 @@ module Finders =
   let findTile coord well =
     Map.tryFind coord well
           
-  let findPiece coord well =
+  let findPiece coord (well : PieceWell) =
     Map.tryFind coord well
     
   let findPieceById id well =
@@ -118,6 +118,27 @@ module Finders =
   let findPieceRuleIDs coord well =
     findPiece coord well
     <!> Types.Pieces.map (fun p -> p.Rules)   
+    
+  let findPieceRules coord ruleWell pieceWell =
+    findPieceRuleIDs coord pieceWell
+    <!> List.map (fun k -> Map.tryFind k ruleWell)
+    >>= Option.unwrap
+    
+  let findPieceConquerRules coord ruleWell pieceWell =
+    findPieceRules coord ruleWell pieceWell
+    <!> List.filter (fun r ->
+      match r with
+      | ConquerRule _ -> true
+      | _ -> false
+    )
+    
+  let findPieceMovementRules coord ruleWell pieceWell =
+    findPieceRules coord ruleWell pieceWell
+    <!> List.filter (fun r ->
+      match r with
+      | MoveRule _ -> true
+      | _ -> false
+    )    
     
   let findPopups well =
     well.Popups

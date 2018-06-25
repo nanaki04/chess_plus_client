@@ -273,6 +273,15 @@ module Types =
       | Knight p -> f p |> Knight
       | Pawn p -> f p |> Pawn
       
+    let coord p =
+      map (fun p -> p.Coordinate) p
+      
+    let color p =
+      map (fun p -> p.Color) p
+      
+    let rules p =
+      map (fun p -> p.Rules) p
+      
   module Location =
     let toString (d, i) =
       d + ":" + i

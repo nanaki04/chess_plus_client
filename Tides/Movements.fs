@@ -10,13 +10,13 @@ module Movements =
   
   let (<*>) = Option.apply
   
-  let private areRuleConditionsMet rule tileSelectionWell =
+  let private areRuleConditionsMet rule piece wellCollection =
     MoveRule.map (fun { Condition = conditions } ->
-      Clauses.areMet conditions rule false tileSelectionWell
+      Clauses.areMet conditions rule piece false wellCollection
     ) rule
     |> Option.defaultValue (Ok false)
     
-  let private filterSatisfiedRules rules tileSelectionWell =
+  let private filterSatisfiedRules rules piece wellCollection =
     let (<*>) = Result.apply
   
     List.fold (fun acc rule ->
@@ -27,47 +27,48 @@ module Movements =
           then rule::r
           else r
         )
-        <*> areRuleConditionsMet rule tileSelectionWell
+        <*> areRuleConditionsMet rule piece wellCollection
       | err ->
         err
     ) (Ok List.empty) rules
 
-  let calculateMovableTiles playerColor tileSelectionWell =
-    let pieceWell = fetchPieceWell ()
-    let wellCollection =
-      { Well.WellCollection.initial with
-          TileSelectionWell = Some tileSelectionWell;
-          PieceWell = Some pieceWell;
-      }
-      
-    let getTileSelectionWell wellCollection =
-      match wellCollection with
-      | Ok { TileSelectionWell = Some well } -> well
-      | _ -> tileSelectionWell
-        
-    findSelectedTileCoord playerColor tileSelectionWell
-    >>= fun coord -> if Pool.Pieces.isPlayerPiece coord pieceWell then Some coord else None
-    <!> fun coord -> (fetchPieceMovementRules coord, findPiece coord pieceWell)
-    |> function
-    | Some (Some rules, piece) ->
-      filterSatisfiedRules rules tileSelectionWell
-      |> Result.map (fun r -> projectRules r piece wellCollection)
-      |> Result.map getTileSelectionWell
-      |> Result.expect tileSelectionWell
+  let calculateMovableTiles playerColor wellCollection =
+    match wellCollection with
+    | { TileSelectionWell = Some tileSelectionWell; PieceWell = Some pieceWell } ->
+      findSelectedTileCoord playerColor tileSelectionWell
+      >>= fun coord -> if Pool.Pieces.isPlayerPiece coord pieceWell then Some coord else None
+      <!> fun coord -> (findPieceMovementRules coord (fetchRuleWell ()) pieceWell, findPiece coord pieceWell)
+      |> function
+      | Some (Some rules, piece) ->
+        filterSatisfiedRules rules piece wellCollection
+        |> Result.bind (fun r -> projectRules r piece wellCollection)
+      | _ ->
+        Ok wellCollection
     | _ ->
       Ok wellCollection
-      |> getTileSelectionWell
    
   let resetMovableTiles playerColor tileSelectionWell =
     TileSelections.updateSelectionConquerable playerColor (fun _ -> List.empty) tileSelectionWell
    
   let updateMovableTiles playerColor tileSelectionWell =
+    let wellCollection t = {
+      Well.WellCollection.initial with
+        TileSelectionWell = Some t;
+        PieceWell = Some (fetchPieceWell ());
+        LifeWell = Some (fetchLifeWell ());
+    }
+    
     if Pool.isPlayer playerColor
     then
       resetMovableTiles playerColor tileSelectionWell
+      |> wellCollection
       |> calculateMovableTiles playerColor
+      |> function
+      | Ok { TileSelectionWell = Some tw } -> Ok tw
+      | Ok _ -> Ok tileSelectionWell
+      | Error e -> Error e
     else
-      tileSelectionWell
+      Ok tileSelectionWell
     
   let isMovableTile coord well =
     fetchOwnConquerableTileCoords ()

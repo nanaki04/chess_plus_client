@@ -2,16 +2,16 @@
 
 module Clauses =
 
-  let rec areMet conditions rule isSimulation tileSelectionWell =
+  let rec areMet conditions rule piece isSimulation tileSelectionWell =
     match conditions with
     | Clause c ->
-      ConditionVerification.isMet c rule isSimulation tileSelectionWell
+      ConditionVerification.isMet c rule piece isSimulation tileSelectionWell
       
     | AllOf clauses ->
       List.fold (fun acc c ->
         match acc with
         | Ok true ->
-          ConditionVerification.isMet c rule isSimulation tileSelectionWell
+          ConditionVerification.isMet c rule piece isSimulation tileSelectionWell
         | falseOrError ->
           falseOrError
       ) (Ok true) clauses
@@ -20,7 +20,7 @@ module Clauses =
       List.fold (fun acc c ->
         match acc with
         | Ok false ->
-          ConditionVerification.isMet c rule isSimulation tileSelectionWell
+          ConditionVerification.isMet c rule piece isSimulation tileSelectionWell
         | trueOrError ->
           trueOrError
       ) (Ok false) clauses
@@ -29,7 +29,7 @@ module Clauses =
       List.fold (fun acc innerConditions ->
         match acc with
         | Ok true ->
-          areMet innerConditions rule isSimulation tileSelectionWell
+          areMet innerConditions rule piece isSimulation tileSelectionWell
         | falseOrError ->
           falseOrError
       ) (Ok true) c

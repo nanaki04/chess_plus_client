@@ -10,13 +10,13 @@ module Conquers =
   
   let (<*>) = Option.apply
   
-  let private areRuleConditionsMet rule isSimulation tileSelectionWell =
+  let private areRuleConditionsMet rule piece isSimulation wellCollection =
     ConquerRule.map (fun { Condition = conditions } ->
-      Clauses.areMet conditions rule isSimulation tileSelectionWell
+      Clauses.areMet conditions rule piece isSimulation wellCollection
     ) rule
     |> Option.defaultValue (Ok false)
     
-  let private filterSatisfiedRules (rules : Rule list) isSimulation tileSelectionWell =
+  let private filterSatisfiedRules (rules : Rule list) piece isSimulation wellCollection =
     let (<*>) = Result.apply
   
     List.fold (fun acc rule ->
@@ -27,86 +27,86 @@ module Conquers =
           then rule::r
           else r
         )
-        <*> areRuleConditionsMet rule isSimulation tileSelectionWell
+        <*> areRuleConditionsMet rule piece isSimulation wellCollection
       | err ->
         err
     ) (Ok List.empty) rules
 
-  let calculateConquerableTiles playerColor isSimulation tileSelectionWell =
-    let pieceWell = fetchPieceWell ()
-    let wellCollection =
-      { Well.WellCollection.initial with
-          TileSelectionWell = Some tileSelectionWell;
-          PieceWell = Some pieceWell;
-      }
-      
-    let getTileSelectionWell wellCollection =
-      match wellCollection with
-      | Ok { TileSelectionWell = Some well } -> well
-      | _ -> tileSelectionWell
-  
-    findSelectedTileCoord playerColor tileSelectionWell
-    >>= fun coord -> if Pool.Pieces.isPlayerPiece coord pieceWell then Some coord else None
-    <!> fun coord -> (fetchPieceConquerRules coord, findPiece coord pieceWell)
-    |> function
-    | Some (Some rules, piece) ->
-      filterSatisfiedRules rules isSimulation tileSelectionWell
-      |> Result.map (fun r -> projectRules r piece wellCollection)
-      |> Result.map getTileSelectionWell
-      |> Result.expect tileSelectionWell
+  let calculateConquerableTiles playerColor isSimulation wellCollection =
+    match wellCollection with
+    | { TileSelectionWell = Some tileSelectionWell; PieceWell = Some pieceWell } ->
+      findSelectedTileCoord playerColor tileSelectionWell
+      >>= fun coord -> if Pool.Pieces.isPlayerPiece coord pieceWell then Some coord else None
+      <!> fun coord -> (fetchPieceConquerRules coord, findPiece coord pieceWell)
+      |> function
+      | Some (Some rules, piece) ->
+        filterSatisfiedRules rules piece isSimulation wellCollection
+        |> Result.bind (fun r -> projectRules r piece wellCollection)
+      | _ ->
+        Ok wellCollection
     | _ ->
       Ok wellCollection
-      |> getTileSelectionWell
    
   let updateConquerableTiles playerColor isSimulation tileSelectionWell =
+    let wellCollection =
+      Well.WellCollection.create (fetchLifeWell () |> Some) None (fetchPieceWell () |> Some) (Some tileSelectionWell) None None
     if Pool.isPlayer playerColor
-    then calculateConquerableTiles playerColor isSimulation tileSelectionWell
-    else tileSelectionWell
+    then
+      calculateConquerableTiles playerColor isSimulation wellCollection
+      |> function
+      | Ok { TileSelectionWell = Some tw } -> Ok tw
+      | Ok _ -> Error "Well collection missing TileSelectionWell"
+      | Error e -> Error e
+    else
+      Ok tileSelectionWell
         
-  let canConquer coord isSimulation piece =
-    Logger.warn "can conquer"
-    piece.Coordinate
-    >>= (fun pieceCoord -> 
-      let offset = Types.Coordinate.getOffset pieceCoord coord
-      fetchPieceConquerRules pieceCoord
-      <!> List.filter (fun rule ->
-        match rule with
-        | ConquerRule { Offset = ruleOffset } -> ruleOffset = offset
-        | _ -> false      
+  let canConquer coord isSimulation (piece : Pieces) wellCollection =
+    match wellCollection with
+    | { PieceWell = Some pieceWell } ->
+      Types.Pieces.coord piece
+      >>= (fun pieceCoord -> 
+        let offset = Types.Coordinate.getOffset pieceCoord coord
+        findPieceConquerRules pieceCoord (fetchRuleWell ()) pieceWell
+        <!> List.filter (fun rule ->
+          match rule with
+          | ConquerRule { Offset = ruleOffset } -> ruleOffset = offset
+          | _ -> false      
+        )
+        <!> (fun rules -> filterSatisfiedRules rules (Some piece) isSimulation wellCollection)
+        <!> Result.map List.length
       )
-      <!> (fun rules ->
-        Logger.log rules.Length
-        rules)
-      <!> (fun rules -> filterSatisfiedRules rules isSimulation (fetchTileSelectionWell ()))
-      <!> Result.map List.length
-    )
-    |> function
-    | Some (Ok 0) ->
-      Logger.warn "Some 0"
-      false
-    | Some (Ok _) ->
-      Logger.warn "Some"
-      true
+      |> function
+      | Some (Ok 0) ->
+        false
+      | Some (Ok _) ->
+        true
+      | _ ->
+        false
     | _ ->
-      Logger.error "None"
       false
     
-  let canAnyConquer coord pieces =
+  let canAnyConquer coord (pieces : Pieces list) wellCollection =
     List.fold (fun conquerable piece ->
       if conquerable
       then true
-      else Types.Pieces.map (canConquer coord true) piece
+      else canConquer coord true piece wellCollection
     ) false pieces    
     
-  let canConquerBlackKing pieceWell =
-    findBlackKingCoord pieceWell
-    <!> (fun kingCoord -> canAnyConquer kingCoord (findWhitePieces pieceWell))
-    |> Option.defaultValue false
-
-  let canConquerWhiteKing pieceWell =
-    findWhiteKingCoord pieceWell
-    <!> (fun kingCoord -> canAnyConquer kingCoord (findBlackPieces pieceWell))
-    |> Option.defaultValue false
+  let canConquerBlackKing wellCollection =
+    match wellCollection with
+    | { PieceWell = Some pieceWell } ->
+      findBlackKingCoord pieceWell
+      <!> (fun kingCoord -> canAnyConquer kingCoord (findWhitePieces pieceWell) wellCollection)
+      |> Option.defaultValue false
+    | _ -> false
+    
+  let canConquerWhiteKing wellCollection =
+    match wellCollection with
+    | { PieceWell = Some pieceWell } ->
+      findWhiteKingCoord pieceWell
+      <!> (fun kingCoord -> canAnyConquer kingCoord (findBlackPieces pieceWell) wellCollection)
+      |> Option.defaultValue false
+    | _ -> false
     
   // TODO refactor  
   let init () =

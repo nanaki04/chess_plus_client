@@ -191,7 +191,8 @@ module Tides =
       Pool.TileSelections.deselect playerColor well
       |> Pool.TileSelections.select coord playerColor
       |> Movements.updateMovableTiles playerColor
-      |> Conquers.updateConquerableTiles playerColor false
+      |> Result.bind (Conquers.updateConquerableTiles playerColor false)
+      |> Result.expect well
     );
     
     tileSelectionTide<DefaultAmplitude> deselectTileLocation (fun amplitude well ->

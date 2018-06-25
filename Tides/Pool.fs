@@ -10,8 +10,8 @@ module Pool =
   
   let (<!>) = fun o f -> Option.map f o
     
-  let isOccupied coord =
-    fetchPiece coord
+  let isOccupied coord pieceWell =
+    findPiece coord pieceWell
     |> function
       | Some _ -> true
       | _ -> false
@@ -68,9 +68,18 @@ module Pool =
   module Pieces =
     open Updaters.Pieces
       
-    let findTargetPiece rule well =
-      findTargetCoord rule
-      >>= fun c -> findPiece c well
+    let findTargetPieceCoord rule (piece : Pieces option) well =
+      match rule, piece with
+      | MoveRule { Offset = offset; }, Some p ->
+        Types.Pieces.coord p >>= findTarget offset
+      | ConquerRule { Offset = offset; }, Some p ->
+        Types.Pieces.coord p >>= findTarget offset
+      | _, _ ->
+        None
+        
+    let findTargetPiece rule piece well =
+      findTargetPieceCoord rule piece well
+      >>= fun coord -> findPiece coord well
                  
     let isPlayerPiece coord well =
       match findPiece coord well, fetchClientDuelist () with

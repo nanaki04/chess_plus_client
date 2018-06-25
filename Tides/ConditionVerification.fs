@@ -8,12 +8,12 @@ module ConditionVerification =
   
   // MEMO: made use of mutable functions to realize recursion across modules
   // TODO find a better way
-  let mutable canConquerBlackKing = fun (_ : PieceWell) -> false  
-  let mutable canConquerWhiteKing = fun (_ : PieceWell) -> false
+  let mutable canConquerBlackKing = fun (_ : WellCollection) -> false  
+  let mutable canConquerWhiteKing = fun (_ : WellCollection) -> false
   let mutable applyRule = fun (_ : Rule) (_ : Pieces option) (wellCollection : WellCollection) -> Ok wellCollection : Result<WellCollection, string>
 
-  let private isPathBlocked rule well =
-    let isBlocked (x, y) (row, column) =
+  let private isPathBlocked rule (piece : Pieces) wellCollection =
+    let isBlocked (x, y) (row, column) pieceWell =
       let rowInt = Row.toInt row
       let colInt = Column.toInt column
       let signX = sign x
@@ -34,25 +34,25 @@ module ConditionVerification =
         |> fun (x, y) -> (rowInt + x, colInt + y)
         |> fun (x, y) -> (Row.fromInt x, Column.fromInt y)
         |> function
-          | (Ok row, Ok col) -> Pool.isOccupied (row, col)
+          | (Ok row, Ok col) -> Pool.isOccupied (row, col) pieceWell
           | _ -> false
       )
       |> Seq.tryFind id
       |> Option.defaultValue false
       |> Conditional
           
-    match rule, (findOwnSelectedTileCoords well (fetchLifeWell ())) with
-    | MoveRule { Offset = offset; }, Some coordinate ->
-      isBlocked offset coordinate
-    | ConquerRule { Offset = offset; }, Some coordinate ->
-      isBlocked offset coordinate
-    | _, None ->
+    match rule, Types.Pieces.coord piece, wellCollection with
+    | MoveRule { Offset = offset; }, Some coordinate, { PieceWell = Some pieceWell } ->
+      isBlocked offset coordinate pieceWell
+    | ConquerRule { Offset = offset; }, Some coordinate, { PieceWell = Some pieceWell } ->
+      isBlocked offset coordinate pieceWell
+    | _, None, _ -> // TODO why did I add this clause again ?
       Conditional true
-    | _, _ ->
+    | _, _, _ ->
       Conditional false
       
-  let private isOccupiedBy duelistType rule tileSelectionWell =
-    match duelistType, Pool.TileSelections.findTargetPiece rule tileSelectionWell with
+  let private isOccupiedBy duelistType rule (piece : Pieces option) pieceWell =
+    match duelistType, Pool.Pieces.findTargetPiece rule piece pieceWell with
     | Any, Some piece ->
       Conditional true
       
@@ -82,36 +82,38 @@ module ConditionVerification =
     | _, _ ->
       Conditional false
 
-  let isMet (operator, condition) rule isSimulation tileSelectionWell =
-    match condition, isSimulation with
-    | Always, _ -> 
+  let isMet (operator, condition) rule piece isSimulation wellCollection =
+    if isSimulation
+    then
+      JsonConversions.RuleDto.export rule
+      |> JsonConversions.export
+      |> Logger.log
+    
+    match condition, isSimulation, piece, wellCollection with
+    | Always, _, _, _ -> 
       Conditional true
       |> Operators.isMet operator
       
-    | PathBlocked, _ ->
-      isPathBlocked rule tileSelectionWell
+    | PathBlocked, _, Some p, _ ->
+      isPathBlocked rule p wellCollection
       |> Operators.isMet operator
+      |> Result.map (Logger.inspect "isPathBlocked")
 
-    | OccupiedBy _, true ->
+    | OccupiedBy _, true, _, _ ->
       // TODO too knowledgable and too specific
       Ok true
       
-    | OccupiedBy duelist, false ->
-      isOccupiedBy duelist rule tileSelectionWell
+    | OccupiedBy duelist, false, _, { PieceWell = Some pieceWell } ->
+      isOccupiedBy duelist rule piece pieceWell
       |> Operators.isMet operator
       
-    | ExposesKing, true ->
-      Ok false
+    | ExposesKing, true, _, _ ->
+      Ok true
       
-    | ExposesKing, false ->
-      let simulateRule pieceWell =
+    | ExposesKing, false, _, { TileSelectionWell = Some tileSelectionWell; PieceWell = Some pieceWell; LifeWell = Some lifeWell } ->
+      let simulateRule () =
         let simulate () =
-          let wellCollection = { Well.WellCollection.initial with PieceWell = Some pieceWell }
-          findOwnSelectedPiece tileSelectionWell pieceWell (fetchLifeWell ())
-          |> (fun p -> applyRule rule p wellCollection)
-          |> function
-          | Ok { PieceWell = Some pw } -> pw
-          | _ -> pieceWell 
+          applyRule rule piece wellCollection
       
         match rule with
         | MoveRule r ->
@@ -119,26 +121,23 @@ module ConditionVerification =
         | ConquerRule r ->
           simulate ()
         | _ ->
-          pieceWell
+          Ok wellCollection
     
       match fetchClientDuelistColor () with
       | Some White ->
-        Logger.warn "Exposes white king"
-        
-        canConquerWhiteKing (simulateRule (fetchPieceWell ()))
-        |> Conditional
-        |> Operators.isMet operator
+        simulateRule ()
+        |> Result.map canConquerWhiteKing
+        |> Result.map Conditional
+        |> Result.bind (Operators.isMet operator)
       | Some Black ->
-        Logger.warn "Exposes black king"
-        
-        canConquerBlackKing (simulateRule (fetchPieceWell ()))
-        |> Conditional
-        |> Operators.isMet operator
+        simulateRule ()
+        |> Result.map canConquerBlackKing
+        |> Result.map Conditional
+        |> Result.bind (Operators.isMet operator)
       | _ ->
-        Logger.warn "ExposesKing invalid color"
         Ok true
             
-    | MoveCount, _ ->
+    | MoveCount, _, _, _ ->
       IntValue 2 // TODO
       |> Operators.isMet operator
       
