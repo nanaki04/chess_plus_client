@@ -42,6 +42,15 @@ module Pool =
       findTarget offset coordinate
     | _, _ ->
       None
+      
+  let isPlayerTurn (well : LifeWell) =
+    match well.Duel, findPlayerColor well with
+    | Some { DuelState = Turn (Player color) }, Some playerColor ->
+      color = playerColor
+    | Some { DuelState = Turn Any }, Some playerColor ->
+      true
+    | _, _ ->
+      false
         
   module TileSelections =
     open Updaters.TileSelections
@@ -92,7 +101,11 @@ module Pool =
       Types.Pieces.map (fun p -> p.Coordinate) piece
       <!> (fun fromCoord ->
         updatePiece fromCoord (fun _ -> None) well
-        |> updatePiece toCoord (fun _ -> Some (Types.Pieces.update (fun p -> { p with Coordinate = Some toCoord }) piece))
+        |> updatePiece toCoord (fun _ ->
+          Some (Types.Pieces.update (fun p ->
+            { p with Coordinate = Some toCoord; MoveCount = p.MoveCount + 1 }
+          ) piece)
+        )
       )
       |> Option.defaultValue well
 

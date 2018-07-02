@@ -41,6 +41,10 @@ module Finders =
     | Some Black -> Some White
     | _ -> None
     
+  let findDuelState lifeWell =
+    findDuel lifeWell
+    |> Option.map (fun duel -> duel.DuelState)
+    
   let findWhiteSelections well =
     well.White
     

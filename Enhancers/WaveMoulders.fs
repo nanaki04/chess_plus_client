@@ -595,6 +595,33 @@ module Moulds =
           })
         <*> Ok (List.ofArray m.Duels)
         <!> addOpenDuelsWave
+        
+  type UpdateDuelStateMould () =
+    let mutable location = Unchecked.defaultof<LocationMould>
+    let mutable duelState = Unchecked.defaultof<DuelStateDto>
+    
+    member m.Location
+      with get () = location
+      and set (v) = location <- v
+    member m.DuelState
+      with get () = duelState
+      and set (v) = duelState <- v
+      
+    static member export (wave) =
+      let (loc, ampl : UpdateDuelStateAmplitude) = wave
+      let m = new UpdateDuelStateMould ()
+      m.Location <- LocationMould.export loc
+      m.DuelState <- DuelStateDto.export ampl.DuelState
+      m
+      
+    interface Importable with
+      member m.import () =
+        Ok (fun duelState ->
+          UpdateDuelStateAmplitude {
+            DuelState = duelState;
+          })
+        <*> DuelStateDto.import m.DuelState
+        <!> updateDuelStateWave
                 
   let inline make<'t when 't :> Importable> mould  =
     JsonConversions.import<'t> mould <!>> fun (m : 't) -> (m :> Importable).import ()    
@@ -623,5 +650,6 @@ module Moulds =
     | l when l = deselectTileLocation -> make<DeselectTileMould> mould
     | l when l = confirmDeselectTileLocation -> make<ConfirmDeselectTileMould> mould
     | l when l = addOpenDuelsLocation -> make<AddOpenDuelsMould> mould
+    | l when l = updateDuelStateLocation -> make<UpdateDuelStateMould> mould
     | l -> Error ("Wave location not found: " + (Tuple.fst l).ToString() + ", " + (Tuple.snd l).ToString())
     

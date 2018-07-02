@@ -137,9 +137,17 @@ module ConditionVerification =
       | _ ->
         Ok true
             
-    | MoveCount, _, _, _ ->
-      IntValue 2 // TODO
+    | MoveCount, _, Some p, _ ->
+      Logger.warn "MoveCount"
+      Types.Pieces.map (fun p -> p.MoveCount) p
+      |> IntValue
+      |> Logger.inspect "int value"
       |> Operators.isMet operator
+      |> Logger.inspect "result"
+      
+    | MoveCount, _, _, _ ->
+      Logger.warn "Invalid Move Count"
+      Ok false
       
     | _ ->
       Ok false

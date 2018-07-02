@@ -18,8 +18,18 @@ type Selection = {
   Conquerable : Coordinate list;
 }
 
+type EndedState =
+| Remise
+| Win of Color
+
+type DuelState =
+| Turn of DuelistType
+| Paused
+| Ended of EndedState  
+
 type Duel = {
   Duelists : list<Duelist>;
+  DuelState : DuelState;
 }
 
 type Connection = {
@@ -138,14 +148,16 @@ module Well =
     let initial = Map.empty
    
   module Duel =
-    let create duelists =
+    let create duelists duelState =
       {
         Duelists = duelists;
+        DuelState = duelState;
       }
       
     let initial =
       {
         Duelists = [];
+        DuelState = Paused;
       }
       
   module Connection =

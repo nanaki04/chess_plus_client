@@ -51,23 +51,22 @@ module Movements =
     TileSelections.updateSelectionConquerable playerColor (fun _ -> List.empty) tileSelectionWell
    
   let updateMovableTiles playerColor tileSelectionWell =
-    let wellCollection t = {
+    let lifeWell = fetchLifeWell ()
+    let wellCollection = {
       Well.WellCollection.initial with
-        TileSelectionWell = Some t;
+        TileSelectionWell = Some (resetMovableTiles playerColor tileSelectionWell);
         PieceWell = Some (fetchPieceWell ());
-        LifeWell = Some (fetchLifeWell ());
+        LifeWell = Some lifeWell;
     }
     
-    if Pool.isPlayer playerColor
-    then
-      resetMovableTiles playerColor tileSelectionWell
-      |> wellCollection
-      |> calculateMovableTiles playerColor
+    match Pool.isPlayer playerColor, Pool.isPlayerTurn lifeWell with
+    | true, true ->
+      calculateMovableTiles playerColor wellCollection
       |> function
       | Ok { TileSelectionWell = Some tw } -> Ok tw
       | Ok _ -> Ok tileSelectionWell
       | Error e -> Error e
-    else
+    | _, _ ->
       Ok tileSelectionWell
     
   let isMovableTile coord well =

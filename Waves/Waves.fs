@@ -88,6 +88,10 @@ module Waves =
   type ConfirmDeselectTileAmplitude = { Player : Color }
   let confirmDeselectTileLocation = ("tile", "confirm_deselect")
   let confirmDeselectTileWave amplitude = (confirmDeselectTileLocation, amplitude)
+  
+  type UpdateDuelStateAmplitude = { DuelState : DuelState }
+  let updateDuelStateLocation = ("duel_state", "update")
+  let updateDuelStateWave amplitude = (updateDuelStateLocation, amplitude)
 
   type OpenPopupAmplitude = { Popup : Popup }
   let openPopupLocation = ("popup", "open")
@@ -137,4 +141,5 @@ module Waves =
   | OpenPopupAmplitude of OpenPopupAmplitude
   | ClosePopupAmplitude of ClosePopupAmplitude
   | AddOpenDuelsAmplitude of AddOpenDuelsAmplitude
+  | UpdateDuelStateAmplitude of UpdateDuelStateAmplitude
   

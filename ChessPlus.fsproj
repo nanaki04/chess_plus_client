@@ -107,6 +107,7 @@
     <Compile Include="Presentation/PieceFactory.fs" />
     <Compile Include="Presentation/Tile.fs" />
     <Compile Include="Presentation/Board.fs" />
+    <Compile Include="Presentation/DuelState.fs" />
     <Compile Include="Presentation/Player.fs" />
     <Compile Include="Presentation/Login.fs" />
     <Compile Include="Presentation/UdpStream.fs" />

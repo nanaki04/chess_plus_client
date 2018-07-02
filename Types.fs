@@ -113,6 +113,7 @@ type Piece = {
   ID : PieceID;
   Color : Color;
   Rules : int list;
+  MoveCount : int;
   Coordinate : Coordinate option;
 }
 
@@ -246,12 +247,13 @@ module Types =
       | Defendable -> "Defendable"
       
   module Piece =
-    let create id color rules coordinate =
+    let create id color rules coordinate moveCount =
       {
         ID = id;
         Color = color;
         Rules = rules;
         Coordinate = coordinate;
+        MoveCount = moveCount;
       }
       
   module Pieces =

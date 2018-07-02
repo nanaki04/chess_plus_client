@@ -18,6 +18,10 @@ module Observers =
     watcher findDuel react
     |> guard
     
+  let observeDuelState (react : Option<DuelState> -> LifeWell -> unit) =
+    watcher findDuelState react
+    |> guard
+    
   let observeTiles (react : TileWell -> TileWell -> unit) =
     watcher id react
     |> guardTileWell

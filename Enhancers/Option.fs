@@ -70,6 +70,9 @@ module Option =
     bind f v
     |> flatten
     
+  let fromBool b =
+    if b then Some () else None
+    
   let (>>=) = fun v f -> bind f v
   
   let (>>>=) = fun v f -> bindAndFlatten f v

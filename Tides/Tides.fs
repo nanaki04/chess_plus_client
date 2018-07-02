@@ -69,6 +69,17 @@ module Tides =
       ) well
     );
     
+    tide<UpdateDuelStateAmplitude> updateDuelStateLocation (fun amplitude well ->
+      let ({ DuelState = duelState } : UpdateDuelStateAmplitude) = amplitude
+      LifeWell.updateDuel (fun duel ->
+        match duel with
+        | Some duel ->
+          Some ({ duel with DuelState = duelState } : Duel)
+        | None ->
+          None
+      ) well
+    );
+    
   ]
   
   let uiTide<'A> = makeTide<'A, UiWell>

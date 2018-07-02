@@ -111,6 +111,7 @@ module DtoTypes =
     let mutable color = Unchecked.defaultof<ColorDto>
     let mutable rules = Array.empty
     let mutable coordinate = Unchecked.defaultof<CoordinateDto>
+    let mutable moveCount = Unchecked.defaultof<int>
 
     member m.Type
       with get () = ``type``
@@ -127,6 +128,9 @@ module DtoTypes =
     member m.Coordinate
       with get () = coordinate
       and set (v) = coordinate <- v
+    member m.MoveCount
+      with get () = moveCount
+      and set (v) = moveCount <- v
 
   type TileDto () =
     let mutable color = Unchecked.defaultof<ColorDto>
@@ -166,11 +170,44 @@ module DtoTypes =
     Color : ColorDto;
   }
   
+  type EndedStateDto () =
+    let mutable ``type`` = Unchecked.defaultof<string>
+    let mutable value = Unchecked.defaultof<ColorDto>
+    
+    member m.Type
+      with get () = ``type``
+      and set (v) = ``type`` <- v
+    member m.Value
+      with get () = value
+      and set (v) = value <- v
+  
+  type DuelStateDto () =
+    let mutable ``type`` = Unchecked.defaultof<string>
+    let mutable turn = Unchecked.defaultof<DuelistTypeDto>
+    let mutable ended = Unchecked.defaultof<EndedStateDto>
+    
+    member m.Type
+      with get () = ``type``
+      and set (v) = ``type`` <- v
+    member m.Turn
+      with get () = turn
+      and set (v) = turn <- v
+    member m.Ended
+      with get () = ended
+      and set (v) = ended <- v
+  
   type TerritoryDto = string
   
-  type DuelDto = {
-    Duelists : DuelistDto array;
-  }
+  type DuelDto () =
+    let mutable duelists = Array.empty
+    let mutable duelState = Unchecked.defaultof<DuelStateDto>
+    
+    member m.Duelists
+      with get () = duelists
+      and set (v) = duelists <- v
+    member m.DuelState
+      with get () = duelState
+      and set (v) = duelState <- v
   
   type ConnectionDto = {
     Tcp : bool;
@@ -603,6 +640,7 @@ module JsonConversions =
       pieceDto.Color <- ColorDto.export piece.Color
       pieceDto.Type <- pieceType
       pieceDto.Rules <- List.toArray piece.Rules
+      pieceDto.MoveCount <- piece.MoveCount
       pieceDto
   
     let export piece =
@@ -620,6 +658,7 @@ module JsonConversions =
       <*> ColorDto.import piece.Color
       <*> Ok (List.ofArray piece.Rules)
       <*> (piece.Coordinate |> Nullable.toOption |> Option.map CoordinateDto.import |> Result.pushOutward)
+      <*> Ok piece.MoveCount
       
     let import (piece : PieceDto) =
       match piece.Type with
@@ -692,17 +731,69 @@ module JsonConversions =
       match territory with
       | "Classic" -> Ok Classic
       | _ -> Error ("No such territory: " + territory)
+
+  module EndedStateDto =
+    let export (endedState : EndedState) =
+      let dto = new EndedStateDto ()
+      match endedState with
+      | Remise ->
+        dto.Type <- "Remise"
+        dto
+      | Win color ->
+        dto.Type <- "Win"
+        dto.Value <- ColorDto.export color
+        dto
+
+    let import (endedState : EndedStateDto) =
+      match endedState.Type with
+      | "Remise" ->
+        Ok Remise
+      | "Win" -> 
+        ColorDto.import endedState.Value
+        <!> (fun color -> Win color)
+      | t ->
+        Error ("No such EndedState: " + t)
+
+  module DuelStateDto =
+    let export (duelState : DuelState) =
+      let dto = new DuelStateDto ()
+      match duelState with
+      | Turn duelist ->
+        dto.Type <- "Turn"
+        dto.Turn <- DuelistTypeDto.export duelist
+        dto
+      | Paused ->
+        dto.Type <- "Paused"
+        dto
+      | Ended endedState ->
+        dto.Type <- "Ended"
+        dto.Ended <- EndedStateDto.export endedState
+        dto
+        
+    let import (duelState : DuelStateDto) =
+      match duelState.Type with
+      | "Turn" ->
+        DuelistTypeDto.import duelState.Turn
+        <!> (fun turn -> Turn turn)
+      | "Paused" ->
+        Ok Paused
+      | "Ended" ->
+        EndedStateDto.import duelState.Ended
+        <!> (fun ended -> Ended ended)
+      | t ->
+        Error ("Failed to import DuelState: " + t)
       
   module DuelDto =
     let export (duel : Duel) =
-      let duelists = List.map DuelistDto.export duel.Duelists |> List.toArray;
-      {
-        Duelists = duelists;
-      }
+      let dto = new DuelDto ()
+      dto.Duelists <- List.map DuelistDto.export duel.Duelists |> List.toArray
+      dto.DuelState <- DuelStateDto.export duel.DuelState
+      dto
       
     let import (duel : DuelDto) =
       Ok Duel.create
       <*> (List.map DuelistDto.import (List.ofArray duel.Duelists) |> unwrap)
+      <*> DuelStateDto.import duel.DuelState
       
   module ConnectionDto =
     let export (connection : Connection) : ConnectionDto =

@@ -48,16 +48,22 @@ module Conquers =
       Ok wellCollection
    
   let updateConquerableTiles playerColor isSimulation tileSelectionWell =
-    let wellCollection =
-      Well.WellCollection.create (fetchLifeWell () |> Some) None (fetchPieceWell () |> Some) (Some tileSelectionWell) None None
-    if Pool.isPlayer playerColor
-    then
+    let lifeWell = fetchLifeWell ()
+    let wellCollection = {
+      Well.WellCollection.initial with
+        TileSelectionWell = Some tileSelectionWell;
+        PieceWell = Some (fetchPieceWell ());
+        LifeWell = Some lifeWell;
+    }
+    
+    match Pool.isPlayer playerColor, Pool.isPlayerTurn lifeWell with
+    | true, true ->
       calculateConquerableTiles playerColor isSimulation wellCollection
       |> function
       | Ok { TileSelectionWell = Some tw } -> Ok tw
-      | Ok _ -> Error "Well collection missing TileSelectionWell"
+      | Ok _ -> Ok tileSelectionWell
       | Error e -> Error e
-    else
+    | _, _ ->
       Ok tileSelectionWell
         
   let canConquer coord isSimulation (piece : Pieces) wellCollection =
