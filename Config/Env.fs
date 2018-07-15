@@ -15,6 +15,10 @@ type Env () =
   let mutable tcpServerAddress = "127.0.0.1"
   [<SerializeField>]
   let mutable tcpServerPort = 1338
+  [<SerializeField>]
+  let mutable visionQuestTcpAddress = "127.0.0.1"
+  [<SerializeField>]
+  let mutable visionQuestTcpPort = 7033
   
   member m.UdpClientPort
     with get () = udpClientPort
@@ -26,6 +30,10 @@ type Env () =
     with get () = tcpServerAddress
   member m.TcpServerPort
     with get () = tcpServerPort
-
+  member m.VisionQuestTcpAddress
+    with get () = visionQuestTcpAddress
+  member m.VisionQuestTcpPort
+    with get () = visionQuestTcpPort
+    
 module EnvAccessor =
   let env = UnityEngine.Resources.Load ("Env") :?> Env

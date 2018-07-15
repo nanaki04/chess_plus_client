@@ -622,9 +622,147 @@ module Moulds =
           })
         <*> DuelStateDto.import m.DuelState
         <!> updateDuelStateWave
+        
+  type UpdateTcpConnectionMould () =
+    let mutable location = Unchecked.defaultof<LocationMould>
+    let mutable connected = Unchecked.defaultof<bool>
+    
+    member m.Location
+      with get () = location
+      and set (v) = location <- v
+    member m.Connected
+      with get () = connected
+      and set (v) = connected <- v
+      
+    static member export (wave) =
+      let (loc, ampl : UpdateTcpConnectionAmplitude) = wave
+      let m = new UpdateTcpConnectionMould ()
+      m.Location <- LocationMould.export loc
+      m.Connected <- ampl.Connected
+      m
+      
+    interface Importable with
+      member m.import () =
+        Ok (fun connected ->
+          UpdateTcpConnectionAmplitude {
+            Connected = connected;
+          })
+        <*> (Ok m.Connected)
+        <!> updateTcpConnectionWave
+
+  type UpdateUdpConnectionMould () =
+    let mutable location = Unchecked.defaultof<LocationMould>
+    let mutable connected = Unchecked.defaultof<bool>
+    
+    member m.Location
+      with get () = location
+      and set (v) = location <- v
+    member m.Connected
+      with get () = connected
+      and set (v) = connected <- v
+      
+    static member export (wave) =
+      let (loc, ampl : UpdateUdpConnectionAmplitude) = wave
+      let m = new UpdateUdpConnectionMould ()
+      m.Location <- LocationMould.export loc
+      m.Connected <- ampl.Connected
+      m
+      
+    interface Importable with
+      member m.import () =
+        Ok (fun connected ->
+          UpdateUdpConnectionAmplitude {
+            Connected = connected;
+          })
+        <*> (Ok m.Connected)
+        <!> updateUdpConnectionWave
+   
+  type OpenPopupMould () =
+    let mutable location = Unchecked.defaultof<LocationMould>
+    let mutable popup = Unchecked.defaultof<PopupDto>
+    
+    member m.Location
+      with get () = location
+      and set (v) = location <- v
+    member m.Popup
+      with get () = popup
+      and set (v) = popup <- v
+      
+    static member export (wave) =
+      let (loc, ampl : OpenPopupAmplitude) = wave
+      let m = new OpenPopupMould ()
+      m.Location <- LocationMould.export loc
+      m.Popup <- PopupDto.export ampl.Popup
+      m
+      
+    interface Importable with
+      member m.import () =
+        Ok (fun popup ->
+          OpenPopupAmplitude {
+            Popup = popup;
+          })
+        <*> (PopupDto.import m.Popup)
+        <!> openPopupWave   
+
+  type ClosePopupMould () =
+    let mutable location = Unchecked.defaultof<LocationMould>
+    let mutable popup = Unchecked.defaultof<PopupDto>
+    
+    member m.Location
+      with get () = location
+      and set (v) = location <- v
+    member m.Popup
+      with get () = popup
+      and set (v) = popup <- v
+      
+    static member export (wave) =
+      let (loc, ampl : ClosePopupAmplitude) = wave
+      let m = new ClosePopupMould ()
+      m.Location <- LocationMould.export loc
+      m.Popup <- PopupDto.export ampl.Popup
+      m
+      
+    interface Importable with
+      member m.import () =
+        Ok (fun popup ->
+          ClosePopupAmplitude {
+            Popup = popup;
+          })
+        <*> (PopupDto.import m.Popup)
+        <!> closePopupWave   
+        
+  let exportMould wave =
+    match wave with
+    | (loc, UpdateTcpConnectionAmplitude ampl) -> UpdateTcpConnectionMould.export (loc, ampl) |> JsonConversions.export |> Ok
+    | (loc, UpdateUdpConnectionAmplitude ampl) -> UpdateUdpConnectionMould.export (loc, ampl) |> JsonConversions.export |> Ok
+    | (loc, PlayerCreatedAmplitude ampl) -> PlayerCreatedMould.export (loc, ampl) |> JsonConversions.export |> Ok
+    | (loc, ConfirmLoginAmplitude ampl) -> ConfirmLoginMould.export (loc, ampl) |> JsonConversions.export |> Ok
+    | (loc, ReportFailureAmplitude ampl) -> ReportFailureMould.export (loc, ampl) |> JsonConversions.export |> Ok
+    | (loc, StartDuelAmplitude ampl) -> StartDuelMould.export (loc, ampl) |> JsonConversions.export |> Ok
+    | (loc, AddDuelistAmplitude ampl) -> AddDuelistMould.export (loc, ampl) |> JsonConversions.export |> Ok
+    | (loc, UpdateDuelStateAmplitude ampl) -> UpdateDuelStateMould.export (loc, ampl) |> JsonConversions.export |> Ok
+    | (("player", "in"), DefaultAmplitude ampl) -> Mould.export ("player", "in") |> JsonConversions.export |> Ok
+    | (loc, OpenPopupAmplitude ampl) -> OpenPopupMould.export (loc, ampl) |> JsonConversions.export |> Ok
+    | (loc, ClosePopupAmplitude ampl) -> ClosePopupMould.export (loc, ampl) |> JsonConversions.export |> Ok
+    | (("login_popup", "click_ok"), DefaultAmplitude ampl) -> Mould.export ("login_popup", "click_ok") |> JsonConversions.export |> Ok
+    | (("login_popup", "change_name_text"), DefaultAmplitude ampl) -> Mould.export ("login_popup", "click_ok") |> JsonConversions.export |> Ok
+    | (("play_duel_popup", "new_button"), DefaultAmplitude ampl) -> Mould.export ("play_duel_popup", "new_button") |> JsonConversions.export |> Ok
+    | (("play_duel_popup", "join_button"), DefaultAmplitude ampl) -> Mould.export ("play_duel_popup", "join_button") |> JsonConversions.export |> Ok
+    | (("play_duel_popup", "click_join"), DefaultAmplitude ampl) -> Mould.export ("play_duel_popup", "click_join") |> JsonConversions.export |> Ok
+    | (("play_duel_popup", "click_new"), DefaultAmplitude ampl) -> Mould.export ("play_duel_popup", "click_new") |> JsonConversions.export |> Ok
+    | (loc, AddOpenDuelsAmplitude ampl) -> AddOpenDuelsMould.export (loc, ampl) |> JsonConversions.export |> Ok
+    | (loc, ConquerTileAmplitude ampl) -> ConquerTileMould.export (loc, ampl) |> JsonConversions.export |> Ok
+    | (loc, SelectClientTileAmplitude ampl) -> SelectClientTileMould.export (loc, ampl) |> JsonConversions.export |> Ok
+    | (("tile", "deselect"), DefaultAmplitude ampl) -> Mould.export ("tile", "deselect") |> JsonConversions.export |> Ok
+    | (loc, ConfirmDeselectTileAmplitude ampl) -> ConfirmDeselectTileMould.export (loc, ampl) |> JsonConversions.export |> Ok
+    | (loc, MovePieceAmplitude ampl) -> MovePieceMould.export (loc, ampl) |> JsonConversions.export |> Ok
+    | (loc, AddPieceAmplitude ampl) -> AddPieceMould.export (loc, ampl) |> JsonConversions.export |> Ok
+    | (loc, RemovePieceAmplitude ampl) -> RemovePieceMould.export (loc, ampl) |> JsonConversions.export |> Ok
+    | _ -> Error "Unmatched Wave"
+   
                 
   let inline make<'t when 't :> Importable> mould  =
-    JsonConversions.import<'t> mould <!>> fun (m : 't) -> (m :> Importable).import ()    
+    JsonConversions.import<'t> mould <!>> fun (m : 't) -> (m :> Importable).import ()
         
   let import mould =
     let loc =

@@ -101,18 +101,15 @@ type BoardView () =
     m.RemoveTiles
     >> m.MakeTiles tileWell
     |> call
-    |> ignore
     
   member m.OnTileSelectionsChanged tileSelectionWell _ =
     m.ResetTileColors
     >> m.HighlightTiles tileSelectionWell
     |> call
-    |> ignore
     
   member m.OnPiecesChanged pieceWell _ =
     m.SpawnPieces pieceWell
     |> call
-    |> ignore
     
   override m.Start () =
     base.Start ()

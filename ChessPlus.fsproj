@@ -73,6 +73,7 @@
     <Compile Include="Enhancers/Matrix.fs" />
     <Compile Include="Connection/Tcp.fs" />
     <Compile Include="Connection/Udp.fs" />
+    <Compile Include="Connection/VisionQuestTcp.fs" />
     <Compile Include="Types.fs" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="ChessPlus.fs" />
@@ -86,6 +87,7 @@
     <Compile Include="Enhancers/WaveMoulders.fs" />
     <Compile Include="Logging/WellLogger.fs" />
     <Compile Include="Logging/WaveLogger.fs" />
+    <Compile Include="Logging/VisionQuest.fs" />
     <Compile Include="Tides/Pool.fs" />
     <Compile Include="Tides/Operators.fs" />
     <Compile Include="Tides/ConditionVerification.fs" />
