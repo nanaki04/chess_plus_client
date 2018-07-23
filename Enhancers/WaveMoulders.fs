@@ -246,6 +246,10 @@ module Moulds =
       let m = new StartDuelMould ()
       m.Location <- LocationMould.export loc
       m.Duel <- ampl.Duel |> DuelDto.export
+      m.Tiles <- ampl.Tiles |> TileWellDto.export
+      m.TileSelections <- ampl.TileSelections |> TileSelectionWellDto.export
+      m.Pieces <- ampl.Pieces |> PieceWellDto.export
+      m.Rules <- ampl.Rules |> RuleWellDto.export
       m
     
     interface Importable with

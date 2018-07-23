@@ -4,23 +4,8 @@ module VisionQuest =
   open Well
   open JsonConversions
   open Moulds
-
-  type private Packet () =
-    let mutable domain = Unchecked.defaultof<string>
-    let mutable invocation = Unchecked.defaultof<string>
-    let mutable payload = Unchecked.defaultof<string>
-    
-    member m.Domain
-      with get () = domain
-      and set (v) = domain <- v
-    member m.Invocation
-      with get () = invocation
-      and set (v) = invocation <- v
-    member m.Payload
-      with get () = payload
-      and set (v) = payload <- v
       
-  type private HistoryItemDto () =
+  type HistoryItemDto () =
     let mutable domain = Unchecked.defaultof<string>
     let mutable invocation = Unchecked.defaultof<string>
     let mutable amplitude = Unchecked.defaultof<string>
@@ -42,18 +27,51 @@ module VisionQuest =
     member m.State
       with get () = state
       and set (v) = state <- v
+      
+  type PayloadDto () =
+    let mutable historyItem = Unchecked.defaultof<HistoryItemDto>
+    let mutable json = Unchecked.defaultof<string>
+    
+    member m.HistoryItem
+      with get () = historyItem
+      and set (v) = historyItem <- v
+    member m.Json
+      with get () = json
+      and set (v) = json <- v
+
+  type Packet () =
+    let mutable domain = Unchecked.defaultof<string>
+    let mutable invocation = Unchecked.defaultof<string>
+    let mutable payload = Unchecked.defaultof<PayloadDto>
+    
+    member m.Domain
+      with get () = domain
+      and set (v) = domain <- v
+    member m.Invocation
+      with get () = invocation
+      and set (v) = invocation <- v
+    member m.Payload
+      with get () = payload
+      and set (v) = payload <- v
               
   let private call = Agent.start (fun () -> None)
   
   let private sendItem item =
+    let payload = new PayloadDto ()
+    payload.HistoryItem <- item
+  
     let packet = new Packet ()
     packet.Domain <- "item"
     packet.Invocation <- "add"
-    packet.Payload <- item |> export
+    packet.Payload <- payload
+    
+    Logger.warn packet.Domain
+    Logger.warn packet.Invocation
+    Logger.warn packet.Payload
     
     packet
     |> export
-    |> (fun p -> p + "\n")
+    |> Logger.inspect "VISION QUEST PACKET"
     |> VisionQuestTcp.send
     
     None
@@ -69,7 +87,7 @@ module VisionQuest =
         historyItem.Amplitude <- mould
         Some historyItem
       | Some item, _ ->
-        Logger.error ("VisionQuest: log data lost for: " + item.Domain + ": " + item.Invocation)
+        Logger.error ("VisionQuest: log data lost for: " + item.Domain + ":" + item.Invocation)
         None
       | _, _ ->
         Logger.error ("VisionQuest: unable to log wave " + domain + ":" + invocation)
@@ -141,5 +159,18 @@ module VisionQuest =
   let waveVisionQuest next wave =
     reportWave wave
     next wave
+    
+  let report wave wellCollection =
+    let historyItem = new HistoryItemDto ()
+    match wave, exportMould wave with
+    | ((domain, invocation), _), Ok mould ->
+      historyItem.Domain <- domain
+      historyItem.Invocation <- invocation
+      historyItem.Amplitude <- mould
+      historyItem.StateType <- "ApplicationState"
+      historyItem.State <- WellCollectionDto.export wellCollection |> JsonConversions.export
+      sendItem historyItem |> ignore
+    | _ ->
+      ()
     
   VisionQuestTcp.listen ()

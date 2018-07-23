@@ -272,7 +272,7 @@ module Well =
       Map.empty
       
   module LifeWell =
-    let create player duel connection ui =
+    let create player duel connection =
       {
         Player = player;
         Duel = duel;

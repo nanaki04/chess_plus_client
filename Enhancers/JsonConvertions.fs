@@ -297,7 +297,34 @@ module DtoTypes =
     member m.Connection
       with get () = connection
       and set (v) = connection <- v
-
+      
+  type WellCollectionDto () =
+    let mutable lifeWell = Unchecked.defaultof<LifeWellDto>
+    let mutable ruleWell = Unchecked.defaultof<RuleWellDto>
+    let mutable pieceWell = Unchecked.defaultof<PieceWellDto>
+    let mutable tileSelectionWell = Unchecked.defaultof<TileSelectionWellDto>
+    let mutable tileWell = Unchecked.defaultof<TileWellDto>
+    let mutable uiWell = Unchecked.defaultof<UiWellDto>
+    
+    member m.LifeWell
+      with get () = lifeWell
+      and set (v) = lifeWell <- v
+    member m.RuleWell
+      with get () = ruleWell
+      and set (v) = ruleWell <- v
+    member m.PieceWell
+      with get () = pieceWell
+      and set (v) = pieceWell <- v    
+    member m.TileSelectionWell
+      with get () = tileSelectionWell
+      and set (v) = tileSelectionWell <- v
+    member m.TileWell
+      with get () = tileWell
+      and set (v) = tileWell <- v
+    member m.UiWell
+      with get () = uiWell
+      and set (v) = uiWell <- v  
+      
 module JsonConversions =
   open Types
   open DtoTypes
@@ -976,3 +1003,51 @@ module JsonConversions =
       <*> player
       <*> duel
       <*> ConnectionDto.import lifewell.Connection
+
+  module WellCollectionDto =
+    let export (wellCollection : WellCollection) =
+      let dto = new WellCollectionDto ()
+      Option.map (fun lifeWell -> dto.LifeWell <- LifeWellDto.export lifeWell) wellCollection.LifeWell |> ignore
+      Option.map (fun ruleWell -> dto.RuleWell <- RuleWellDto.export ruleWell) wellCollection.RuleWell |> ignore
+      Option.map (fun pieceWell -> dto.PieceWell <- PieceWellDto.export pieceWell) wellCollection.PieceWell |> ignore
+      Option.map (fun tileSelectionWell -> dto.TileSelectionWell <- TileSelectionWellDto.export tileSelectionWell) wellCollection.TileSelectionWell |> ignore
+      Option.map (fun tileWell -> dto.TileWell <- TileWellDto.export tileWell) wellCollection.TileWell |> ignore
+      Option.map (fun uiWell -> dto.UiWell <- UiWellDto.export uiWell) wellCollection.UiWell |> ignore
+      dto
+      
+    let import (wellCollection : WellCollectionDto) =
+      Ok (fun lifeWell ruleWell pieceWell tileSelectionWell tileWell uiWell ->
+        { 
+          LifeWell = lifeWell;
+          RuleWell = ruleWell;
+          PieceWell = pieceWell;
+          TileSelectionWell = tileSelectionWell;
+          TileWell = tileWell;
+          UiWell = uiWell
+        }
+      )
+      <*>
+        match Nullable.toOption wellCollection.LifeWell with
+        | Some well -> LifeWellDto.import well |> Result.map Some
+        | None -> Ok None
+      <*>
+        match Nullable.toOption wellCollection.RuleWell with
+        | Some well -> RuleWellDto.import well |> Result.map Some
+        | None -> Ok None
+      <*>
+        match Nullable.toOption wellCollection.PieceWell with
+        | Some well -> PieceWellDto.import well |> Result.map Some
+        | None -> Ok None
+      <*>
+        match Nullable.toOption wellCollection.TileSelectionWell with
+        | Some well -> TileSelectionWellDto.import well |> Result.map Some
+        | None -> Ok None
+      <*>
+        match Nullable.toOption wellCollection.TileWell with
+        | Some well -> TileWellDto.import well |> Result.map Some
+        | None -> Ok None
+      <*>
+        match Nullable.toOption wellCollection.UiWell with
+        | Some well -> UiWellDto.import well |> Result.map Some
+        | None -> Ok None
+      
