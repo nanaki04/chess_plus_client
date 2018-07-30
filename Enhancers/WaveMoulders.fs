@@ -833,6 +833,7 @@ module Moulds =
     | (("play_duel_popup", "click_new"), DefaultAmplitude ampl) -> Mould.export ("play_duel_popup", "click_new") |> JsonConversions.export |> Ok
     | (loc, AddOpenDuelsAmplitude ampl) -> AddOpenDuelsMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (loc, ConquerTileAmplitude ampl) -> ConquerTileMould.export (loc, ampl) |> JsonConversions.export |> Ok
+    | (loc, SelectTileAmplitude ampl) -> SelectTileMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (loc, PromotePieceAmplitude ampl) -> PromotePieceMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (loc, SelectClientTileAmplitude ampl) -> SelectClientTileMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (("tile", "deselect"), DefaultAmplitude ampl) -> Mould.export ("tile", "deselect") |> JsonConversions.export |> Ok
