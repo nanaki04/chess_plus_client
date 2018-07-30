@@ -142,7 +142,16 @@ module Finders =
       match r with
       | MoveRule _ -> true
       | _ -> false
-    )    
+    )
+    
+  let findPieceMovementAndComboRules coord ruleWell pieceWell =
+    findPieceRules coord ruleWell pieceWell
+    <!> List.filter (fun r ->
+      match r with
+      | MoveRule _ -> true
+      | MoveComboRule _ -> true
+      | _ -> false
+    )  
     
   let findPopups well =
     well.Popups

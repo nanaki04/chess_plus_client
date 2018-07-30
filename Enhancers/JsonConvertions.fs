@@ -23,6 +23,10 @@ module DtoTypes =
   type ConditionDto () =
     let mutable ``type`` = null
     let mutable occupiedBy = Unchecked.defaultof<DuelistTypeDto>
+    let mutable otherPieceType = Unchecked.defaultof<string>
+    let mutable otherOwner = Unchecked.defaultof<DuelistTypeDto>
+    let mutable row = 0
+    let mutable column = 0
     
     member m.Type
       with get () = ``type``
@@ -30,10 +34,23 @@ module DtoTypes =
     member m.OccupiedBy
       with get () = occupiedBy
       and set (v) = occupiedBy <- v
+    member m.OtherPieceType
+      with get () = otherPieceType
+      and set (v) = otherPieceType <- v
+    member m.OtherOwner
+      with get () = otherOwner
+      and set (v) = otherOwner <- v
+    member m.Row
+      with get () = row
+      and set (v) = row <- v
+    member m.Column
+      with get () = column
+      and set (v) = column <- v
             
   type OperatorDto () =
     let mutable ``type`` = null
     let mutable value = Unchecked.defaultof<int>
+    let mutable stringValue = Unchecked.defaultof<string>
     
     member m.Type
       with get () = ``type``
@@ -41,6 +58,9 @@ module DtoTypes =
     member m.Value
       with get () = value
       and set (v) = value <- v
+    member m.StringValue
+      with get () = stringValue
+      and set (v) = stringValue <- v
       
   type ClauseDto () =
     let mutable operator = Unchecked.defaultof<OperatorDto>
@@ -449,7 +469,7 @@ module JsonConversions =
       match player with
       | Any -> dto.Type <- "Any"
       | Self -> dto.Type <- "Self"
-      | Other -> dto.Type <- "Other"
+      | DuelistType.Other -> dto.Type <- "Other"
       | Player p ->
         dto.Type <- "Player"
         dto.Player <- ColorDto.export p
@@ -459,7 +479,7 @@ module JsonConversions =
       match player.Type with
       | "Any" -> Ok Any
       | "Self" -> Ok Self
-      | "Other" -> Ok Other
+      | "Other" -> Ok DuelistType.Other
       | "Player" -> ColorDto.import player.Player <!> Player
       | x -> Error ("Invalid duelist type: " + x.ToString())
 
@@ -470,6 +490,18 @@ module JsonConversions =
       match condition with
       | OccupiedBy p ->
         dto.OccupiedBy <- DuelistTypeDto.export p
+        dto
+      | OtherPieceType t ->
+        dto.OtherPieceType <- t
+        dto
+      | OtherOwner p ->
+        dto.OtherOwner <- DuelistTypeDto.export p
+        dto
+      | Condition.Row r ->
+        dto.Row <- Row.toInt r
+        dto
+      | Condition.Column c ->
+        dto.Column <- Column.toInt c
         dto
       | _ -> dto
       
@@ -483,6 +515,11 @@ module JsonConversions =
       | "Conquerable" -> Conquerable |> Ok
       | "Movable" -> Movable |> Ok
       | "Defendable" -> Defendable |> Ok
+      | "OtherPieceType" -> Nullable.toResult condition.OtherPieceType <!> OtherPieceType
+      | "OtherOwner" -> condition.OtherOwner |> DuelistTypeDto.import <!> Condition.OtherOwner
+      | "ExposedWhileMoving" -> ExposedWhileMoving |> Ok
+      | "Row" -> Row.fromInt condition.Row <!> Condition.Row
+      | "Column" -> Column.fromInt condition.Column <!> Condition.Column
       | _ -> Error ("No such condition: " + condition.Type)
     
   module OperatorDto =

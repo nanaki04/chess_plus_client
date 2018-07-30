@@ -65,10 +65,6 @@ module VisionQuest =
     packet.Invocation <- "add"
     packet.Payload <- payload
     
-    Logger.warn packet.Domain
-    Logger.warn packet.Invocation
-    Logger.warn packet.Payload
-    
     packet
     |> export
     |> Logger.inspect "VISION QUEST PACKET"
@@ -170,7 +166,7 @@ module VisionQuest =
       historyItem.StateType <- "ApplicationState"
       historyItem.State <- WellCollectionDto.export wellCollection |> JsonConversions.export
       sendItem historyItem |> ignore
-    | _ ->
-      ()
+    | _, Error err ->
+      Logger.error err
     
   VisionQuestTcp.listen ()

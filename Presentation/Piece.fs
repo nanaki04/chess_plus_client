@@ -21,11 +21,16 @@ type PieceView () =
   
   let mutable removeFromTile = fun () -> ()
   
+  let mutable pieceType : string = ""
+  
   let changeColor piece =
     let ({ Color = color } : Piece) = piece
     Nullable.toResult text
     <!> fun t -> t.color <- PieceViewDefinitions.baseColors.[color]
     <!!> Logger.warn
+    
+  member m.IsPieceType piece =
+    Types.Pieces.toString piece = pieceType
   
   member m.Set piece =
     Types.Pieces.map changeColor piece
@@ -33,6 +38,7 @@ type PieceView () =
     
   member m.Init (piece : Pieces) coord =
     Types.Pieces.map changeColor piece
+    pieceType <- Types.Pieces.toString piece
     m
     
   member m.OnAddToTile remove =

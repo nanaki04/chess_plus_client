@@ -11,10 +11,13 @@ module Movements =
   let (<*>) = Option.apply
   
   let private areRuleConditionsMet rule piece wellCollection =
-    MoveRule.map (fun { Condition = conditions } ->
+    match rule with
+    | MoveRule { Condition = conditions } ->
       Clauses.areMet conditions rule piece false wellCollection
-    ) rule
-    |> Option.defaultValue (Ok false)
+    | MoveComboRule { Condition = conditions } ->
+      Clauses.areMet conditions rule piece false wellCollection
+    | _ ->
+      Ok false
     
   let private filterSatisfiedRules rules piece wellCollection =
     let (<*>) = Result.apply
@@ -37,7 +40,7 @@ module Movements =
     | { TileSelectionWell = Some tileSelectionWell; PieceWell = Some pieceWell } ->
       findSelectedTileCoord playerColor tileSelectionWell
       >>= fun coord -> if Pool.Pieces.isPlayerPiece coord pieceWell then Some coord else None
-      <!> fun coord -> (findPieceMovementRules coord (fetchRuleWell ()) pieceWell, findPiece coord pieceWell)
+      <!> fun coord -> (findPieceMovementAndComboRules coord (fetchRuleWell ()) pieceWell, findPiece coord pieceWell)
       |> function
       | Some (Some rules, piece) ->
         filterSatisfiedRules rules piece wellCollection

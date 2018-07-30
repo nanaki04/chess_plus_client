@@ -79,9 +79,18 @@ type BoardView () =
     pieceWell
     |> Map.fold (fun (newPieces, oldPieces) coord piece ->
       let p = Types.Pieces.map id piece
-      match Map.tryFind p.ID pieces with
-      | Some (pieceView : PieceView) -> pieceView.Set piece
-      | None -> pieceFactory.Spawn piece coord
+      let pieceView =
+        match Map.tryFind p.ID pieces with
+        | Some (pieceView : PieceView) ->
+          if pieceView.IsPieceType piece then
+            pieceView.Set piece
+          else
+            pieceView.Remove ()
+            pieceFactory.Spawn piece coord
+        | None ->
+          pieceFactory.Spawn piece coord
+          
+      pieceView
       |> (fun pieceView ->
         Map.tryFind coord tiles
         <!> (fun tileView -> tileView.AddPiece pieceView)

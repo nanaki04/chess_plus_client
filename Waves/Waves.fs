@@ -74,6 +74,10 @@ module Waves =
   let conquerTileLocation = ("piece", "conquer")
   let conquerTileWave amplitude = (conquerTileLocation, amplitude)
   
+  type PromotePieceAmplitude = { Piece : Pieces }
+  let promotePieceLocation = ("piece", "promote")
+  let promotePieceWave amplitude = (promotePieceLocation, amplitude)
+  
   type SelectTileAmplitude = { Player : Color; Coordinate : Coordinate }
   let selectTileLocation = ("tile", "confirm_select")
   let selectTileWave amplitude = (selectTileLocation, amplitude)
@@ -135,6 +139,7 @@ module Waves =
   | RemovePieceAmplitude of RemovePieceAmplitude
   | MovePieceAmplitude of MovePieceAmplitude
   | ConquerTileAmplitude of ConquerTileAmplitude
+  | PromotePieceAmplitude of PromotePieceAmplitude
   | SelectClientTileAmplitude of SelectClientTileAmplitude
   | SelectTileAmplitude of SelectTileAmplitude
   | ConfirmDeselectTileAmplitude of ConfirmDeselectTileAmplitude

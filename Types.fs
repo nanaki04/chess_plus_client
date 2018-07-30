@@ -51,6 +51,11 @@ type Condition =
 | Conquerable
 | Movable
 | Defendable
+| OtherPieceType of string
+| OtherOwner of DuelistType
+| ExposedWhileMoving
+| Row of Row
+| Column of Column
 
 type Operator =
 | Is
@@ -145,6 +150,7 @@ type Location = string * string
 type ConditionResult =
 | Conditional of bool
 | IntValue of int
+| StringValue of string
 
 module Types =
   module Column =
@@ -245,6 +251,11 @@ module Types =
       | Conquerable -> "Conquerable"
       | Movable -> "Movable"
       | Defendable -> "Defendable"
+      | OtherOwner _ -> "OtherOwner"
+      | OtherPieceType _ -> "OtherPieceType"
+      | ExposedWhileMoving -> "ExposedWhileMoving"
+      | Row _ -> "Row"
+      | Column _ -> "Column"
       
   module Piece =
     let create id color rules coordinate moveCount =
@@ -283,6 +294,18 @@ module Types =
       
     let rules p =
       map (fun p -> p.Rules) p
+      
+    let id p =
+      map (fun p -> p.ID) p
+      
+    let toString p =
+      match p with
+      | King _ -> "King"
+      | Queen _ -> "Queen"
+      | Rook _ -> "Rook"
+      | Bishop _ -> "Bishop"
+      | Knight _ -> "Knight"
+      | Pawn _ -> "Pawn"
       
   module Location =
     let toString (d, i) =

@@ -252,6 +252,15 @@ module Tides =
       
       Pool.Pieces.movePiece piece t well
     );
+    
+    pieceTide<PromotePieceAmplitude> promotePieceLocation (fun amplitude well ->
+      let ({ Piece = piece } : PromotePieceAmplitude) = amplitude
+      
+      Updaters.Pieces.updatePieceWhere
+        (fun _ p -> Types.Pieces.id p = Types.Pieces.id piece)
+        (fun coord _ -> Types.Pieces.update (fun p -> { p with Coordinate = Some coord }) piece)
+        well
+    );
  
   ]
   

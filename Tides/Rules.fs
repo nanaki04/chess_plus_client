@@ -68,6 +68,20 @@ module RuleApplication =
         |> Option.defaultValue (Ok wellCollection)
       | _ ->
         Ok wellCollection           
+     
+    | MoveComboRule { MyOffset = offset; }, Some p, { TileSelectionWell = Some well } ->
+      Pieces.map (fun p -> (p.Coordinate, p.Color)) p
+      |> function
+      | (Some coord, color) ->
+        Coordinate.applyOffset offset coord
+        |> Result.toOption
+        <!> (fun coord ->
+          TileSelections.updateSelectionConquerable color (fun conquerable -> coord::conquerable) well
+        )
+        <!> fun well -> Ok { wellCollection with TileSelectionWell = Some well; }
+        |> Option.defaultValue (Ok wellCollection)
+      | _ ->
+        Ok wellCollection
         
     | _, _, _ ->
       Error "Rule could not be projected"

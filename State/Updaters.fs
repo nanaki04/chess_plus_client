@@ -91,6 +91,11 @@ module Updaters =
     let updatePiece coord updater well =
       well
       |> Map.update coord updater
+      
+    let updatePieceWhere predicate updater well =
+      Map.map (fun k t ->
+        if predicate k t then updater k t else t
+      ) well
     
   module UI =  
     

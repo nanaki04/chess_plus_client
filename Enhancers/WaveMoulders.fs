@@ -44,7 +44,57 @@ module Moulds =
       let dto = new Mould ()
       dto.Location <- LocationMould.export location
       dto
-  
+      
+  type TextMould () =
+    let mutable location = Unchecked.defaultof<LocationMould>
+    let mutable text = Unchecked.defaultof<string>
+    
+    member m.Location
+      with get () = location
+      and set (v) = location <- v  
+    member m.Text
+      with get () = text
+      and set (v) = text <- v
+      
+    static member export (wave) =
+      let (loc, ampl : TextAmplitude) = wave
+      let m = new TextMould ()
+      m.Location <- LocationMould.export loc
+      m.Text <- ampl.Text
+      m
+      
+    interface Importable with
+      member m.import () =
+        Nullable.toResult m.Location
+        >>= fun loc -> loc.import ()
+        <!> fun loc -> (loc, TextAmplitude { Text = m.Text })    
+         
+  type UiComponentMould () =
+    let mutable location = Unchecked.defaultof<LocationMould>
+    let mutable uiComponent = Unchecked.defaultof<UiComponentDto>
+    
+    member m.Location
+      with get () = location
+      and set (v) = location <- v  
+    member m.UiComponent
+      with get () = uiComponent
+      and set (v) = uiComponent <- v
+      
+    static member export (wave) =
+      let (loc, ampl : UiComponentAmplitude) = wave
+      let m = new UiComponentMould ()
+      m.Location <- LocationMould.export loc
+      m.UiComponent <- JsonConversions.UiComponentDto.export ampl
+      m
+      
+    interface Importable with
+      member m.import () =
+        Nullable.toResult m.Location
+        >>= fun loc -> loc.import ()
+        >>= fun loc ->
+          JsonConversions.UiComponentDto.import m.UiComponent
+          <!> fun uiComponent -> (loc, UiComponentAmplitude uiComponent)
+        
   type AddTileMould () =
     let mutable location = Unchecked.defaultof<LocationMould>
     let mutable coordinate = Unchecked.defaultof<CoordinateDto>
@@ -423,8 +473,35 @@ module Moulds =
         <*> PieceDto.import  m.Piece
         <*> CoordinateDto.import m.From
         <*> CoordinateDto.import m.To
-        <!> movePieceWave       
-
+        <!> movePieceWave   
+            
+  type PromotePieceMould () =
+    let mutable location = Unchecked.defaultof<LocationMould>
+    let mutable piece = Unchecked.defaultof<PieceDto>
+    
+    member m.Location
+      with get() = location
+      and set(v) = location <- v    
+    member m.Piece
+      with get() = piece
+      and set(v) = piece <- v 
+      
+    static member export (wave) =    
+      let (loc, ampl : PromotePieceAmplitude) = wave
+      let m = new PromotePieceMould ()
+      m.Location <- LocationMould.export loc
+      m.Piece <- ampl.Piece |> PieceDto.export
+      m
+    
+    interface Importable with
+      member m.import () =
+        Ok (fun piece ->
+          PromotePieceAmplitude {
+            Piece = piece;
+          })
+        <*> PieceDto.import  m.Piece
+        <!> promotePieceWave 
+        
   type ConquerTileMould () =
     let mutable location = Unchecked.defaultof<LocationMould>
     let mutable piece = Unchecked.defaultof<PieceDto>
@@ -749,30 +826,28 @@ module Moulds =
     | (loc, OpenPopupAmplitude ampl) -> OpenPopupMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (loc, ClosePopupAmplitude ampl) -> ClosePopupMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (("login_popup", "click_ok"), DefaultAmplitude ampl) -> Mould.export ("login_popup", "click_ok") |> JsonConversions.export |> Ok
-    | (("login_popup", "change_name_text"), DefaultAmplitude ampl) -> Mould.export ("login_popup", "click_ok") |> JsonConversions.export |> Ok
-    | (("play_duel_popup", "new_button"), DefaultAmplitude ampl) -> Mould.export ("play_duel_popup", "new_button") |> JsonConversions.export |> Ok
-    | (("play_duel_popup", "join_button"), DefaultAmplitude ampl) -> Mould.export ("play_duel_popup", "join_button") |> JsonConversions.export |> Ok
+    | (("login_popup", "change_name_text"), TextAmplitude ampl) -> TextMould.export (("login_popup", "change_name_text"), ampl) |> JsonConversions.export |> Ok
+    | (("play_duel_popup", "new_button"), UiComponentAmplitude ampl) -> UiComponentMould.export (("play_duel_popup", "new_button"), ampl) |> JsonConversions.export |> Ok
+    | (("play_duel_popup", "join_button"), UiComponentAmplitude ampl) -> UiComponentMould.export (("play_duel_popup", "join_button"), ampl) |> JsonConversions.export |> Ok
     | (("play_duel_popup", "click_join"), DefaultAmplitude ampl) -> Mould.export ("play_duel_popup", "click_join") |> JsonConversions.export |> Ok
     | (("play_duel_popup", "click_new"), DefaultAmplitude ampl) -> Mould.export ("play_duel_popup", "click_new") |> JsonConversions.export |> Ok
     | (loc, AddOpenDuelsAmplitude ampl) -> AddOpenDuelsMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (loc, ConquerTileAmplitude ampl) -> ConquerTileMould.export (loc, ampl) |> JsonConversions.export |> Ok
+    | (loc, PromotePieceAmplitude ampl) -> PromotePieceMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (loc, SelectClientTileAmplitude ampl) -> SelectClientTileMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (("tile", "deselect"), DefaultAmplitude ampl) -> Mould.export ("tile", "deselect") |> JsonConversions.export |> Ok
     | (loc, ConfirmDeselectTileAmplitude ampl) -> ConfirmDeselectTileMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (loc, MovePieceAmplitude ampl) -> MovePieceMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (loc, AddPieceAmplitude ampl) -> AddPieceMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (loc, RemovePieceAmplitude ampl) -> RemovePieceMould.export (loc, ampl) |> JsonConversions.export |> Ok
-    | _ -> Error "Unmatched Wave"
-   
-                
+    | ((domain, invocation), _) -> Error ("Unmatched Wave: " + domain + ":" + invocation)
+                  
   let inline make<'t when 't :> Importable> mould  =
     JsonConversions.import<'t> mould <!>> fun (m : 't) -> (m :> Importable).import ()
         
   let import mould =
     let loc =
       JsonConversions.import<Mould> mould <!>> fun m -> m.import ()
-      
-    Logger.log loc
       
     loc <!>> function
     | l when l = addTileLocation -> make<AddTileMould> mould
@@ -787,6 +862,7 @@ module Moulds =
     | l when l = removePieceLocation -> make<RemovePieceMould> mould
     | l when l = movePieceLocation -> make<MovePieceMould> mould
     | l when l = conquerTileLocation -> make<ConquerTileMould> mould
+    | l when l = promotePieceLocation -> make<PromotePieceMould> mould
     | l when l = selectTileLocation -> make<SelectTileMould> mould
     | l when l = selectClientTileLocation -> make<SelectClientTileMould> mould
     | l when l = deselectTileLocation -> make<DeselectTileMould> mould

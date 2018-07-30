@@ -46,12 +46,22 @@ module ConditionVerification =
       isBlocked offset coordinate pieceWell
     | ConquerRule { Offset = offset; }, Some coordinate, { PieceWell = Some pieceWell } ->
       isBlocked offset coordinate pieceWell
+    | MoveComboRule { MyOffset = offset; Other = other; OtherOffset = otherOffset; }, Some coordinate, { PieceWell = Some pieceWell } ->
+      match isBlocked offset coordinate pieceWell with
+      | Conditional true -> Conditional true
+      | Conditional false ->
+        ((Types.Coordinate.applyOffset other coordinate
+        |> Result.toOption)
+        <!> fun otherCoord -> isBlocked otherOffset otherCoord pieceWell)
+        |> Option.defaultValue (Conditional false)
+      | _ -> Conditional false
     | _, None, _ -> // TODO why did I add this clause again ?
       Conditional true
     | _, _, _ ->
       Conditional false
       
   let private isOccupiedBy duelistType rule (piece : Pieces option) pieceWell =
+    // TODO add support for multiple target checks for move combos
     match duelistType, Pool.Pieces.findTargetPiece rule piece pieceWell with
     | Any, Some piece ->
       Conditional true
@@ -65,7 +75,7 @@ module ConditionVerification =
       )
       |> Option.defaultValue (Conditional false)
       
-    | Other, Some piece ->
+    | DuelistType.Other, Some piece ->
       fetchOpponentDuelist ()
       <!> (fun other ->
         Types.Pieces.map (fun p ->
@@ -83,12 +93,6 @@ module ConditionVerification =
       Conditional false
 
   let isMet (operator, condition) rule piece isSimulation wellCollection =
-    if isSimulation
-    then
-      JsonConversions.RuleDto.export rule
-      |> JsonConversions.export
-      |> Logger.log
-    
     match condition, isSimulation, piece, wellCollection with
     | Always, _, _, _ -> 
       Conditional true
@@ -136,6 +140,10 @@ module ConditionVerification =
         |> Result.bind (Operators.isMet operator)
       | _ ->
         Ok true
+     
+    | ExposedWhileMoving, _, Some p, { PieceWell = Some pieceWell } ->
+      // TODO
+      Ok true
             
     | MoveCount, _, Some p, _ ->
       Logger.warn "MoveCount"
@@ -148,6 +156,33 @@ module ConditionVerification =
     | MoveCount, _, _, _ ->
       Logger.warn "Invalid Move Count"
       Ok false
+      
+    | OtherPieceType pieceType, _, p, { PieceWell = Some pieceWell} ->
+      Pool.Pieces.findOtherPieceType rule p pieceWell
+      |> Option.map (fun otherPieceType -> pieceType = otherPieceType |> Conditional)
+      |> Option.defaultValue (false |> Conditional)
+      |> Operators.isMet operator
+    
+    | OtherOwner owner, _, p, { PieceWell = Some pieceWell} ->
+      match owner, Pool.Pieces.findOtherPieceColor rule p pieceWell with
+      | Any, Some _ ->
+        Conditional true
+        |> Operators.isMet operator
+      | Self, Some c ->
+        Pool.isPlayer c
+        |> Conditional
+        |> Operators.isMet operator
+      | Other, Some c ->
+        Pool.isPlayer c
+        |> not
+        |> Conditional
+        |> Operators.isMet operator
+      | Player playerColor, Some c ->
+        playerColor = c
+        |> Conditional
+        |> Operators.isMet operator
+      | _, _ ->
+        Ok false
       
     | _ ->
       Ok false
