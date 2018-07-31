@@ -289,6 +289,9 @@ module Types =
     let coord p =
       map (fun p -> p.Coordinate) p
       
+    let withCoord coord p =
+      update (fun p -> { p with Coordinate = coord; }) p
+      
     let color p =
       map (fun p -> p.Color) p
       

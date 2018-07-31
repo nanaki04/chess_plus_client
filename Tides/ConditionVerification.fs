@@ -10,7 +10,46 @@ module ConditionVerification =
   // TODO find a better way
   let mutable canConquerBlackKing = fun (_ : WellCollection) -> false  
   let mutable canConquerWhiteKing = fun (_ : WellCollection) -> false
+  let mutable canAnyConquerPiece = fun (_ : Pieces) (_ : WellCollection) -> false
   let mutable applyRule = fun (_ : Rule) (_ : Pieces option) (wellCollection : WellCollection) -> Ok wellCollection : Result<WellCollection, string>
+
+  let private findCoordinatesToOffset (x, y) (row, column) =
+    let rowInt = Row.toInt row
+    let colInt = Column.toInt column
+    let signX = sign x
+    let signY = sign y
+    let absX = abs x
+    let absY = abs y
+    let steps = (max absX absY) - 1
+    let factorX = (float absX - 1.0) / float steps |> max 0.0
+    let factorY = (float absY - 1.0) / float steps |> max 0.0    
+    seq { 1..steps }
+    |> Seq.map (fun step ->
+      (float (step), float (step))
+      |> fun (x, y) -> (factorX * x, factorY * y)
+      |> fun (x, y) -> (round x, round y)
+      |> fun (x, y) -> (int x, int y)
+      |> fun (x, y) -> (signX * x, signY * y)
+      |> fun (x, y) -> (rowInt + x, colInt + y)
+      |> fun (x, y) -> (Row.fromInt x, Column.fromInt y)
+      |> function
+      | Ok row, Ok col -> Ok (row, col)
+      | Error err, _ -> Error err
+      | _, Error err -> Error err
+    )
+    |> Seq.toList
+    |> Result.unwrap
+      
+  let private findCoordinatesInPath rule (piece : Pieces) =
+    match rule, Types.Pieces.coord piece with
+    | MoveRule { Offset = offset; }, Some coordinate ->
+      findCoordinatesToOffset offset coordinate
+    | ConquerRule { Offset = offset; }, Some coordinate ->
+      findCoordinatesToOffset offset coordinate
+    | MoveComboRule { MyOffset = offset; }, Some coordinate ->
+      findCoordinatesToOffset offset coordinate
+    | _, _ ->
+      Ok []    
 
   let private isPathBlocked rule (piece : Pieces) wellCollection =
     let isBlocked (x, y) (row, column) pieceWell =
@@ -142,8 +181,18 @@ module ConditionVerification =
         Ok true
      
     | ExposedWhileMoving, _, Some p, { PieceWell = Some pieceWell } ->
-      // TODO
-      Ok true
+      findCoordinatesInPath rule p
+      |> Result.map (List.fold (fun acc coord ->
+        match acc with
+        | true ->
+          true
+        | false ->
+          Pool.Pieces.movePiece p coord pieceWell
+          |> fun well -> { wellCollection with PieceWell = Some well; }
+          |> canAnyConquerPiece (Types.Pieces.withCoord (Some coord) p)
+      ) false)
+      |> Result.map Conditional
+      |> Result.bind (Operators.isMet operator)
             
     | MoveCount, _, Some p, _ ->
       Logger.warn "MoveCount"

@@ -98,6 +98,15 @@ module Conquers =
       else canConquer coord true piece wellCollection
     ) false pieces    
     
+  let canAnyConquerPiece (piece : Pieces) wellCollection =
+    match wellCollection, Types.Pieces.color piece, Types.Pieces.coord piece with
+    | { PieceWell = Some pieceWell }, White, Some coord ->
+      canAnyConquer coord (findBlackPieces pieceWell) wellCollection
+    | { PieceWell = Some pieceWell }, Black, Some coord ->
+      canAnyConquer coord (findWhitePieces pieceWell) wellCollection
+    | _, _, _ ->
+      false
+         
   let canConquerBlackKing wellCollection =
     match wellCollection with
     | { PieceWell = Some pieceWell } ->
@@ -118,3 +127,4 @@ module Conquers =
   let init () =
     ConditionVerification.canConquerBlackKing <- canConquerBlackKing
     ConditionVerification.canConquerWhiteKing <- canConquerWhiteKing
+    ConditionVerification.canAnyConquerPiece <- canAnyConquerPiece
