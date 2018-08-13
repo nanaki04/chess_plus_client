@@ -72,39 +72,6 @@ type TileView () =
     
   member m.MovePiece () =
     piece <- None
-      
-  member m.AddPiece (p : PieceView) =
-    let add () =
-      p.OnAddToTile m.MovePiece
-      p.gameObject.transform.SetParent(m.gameObject.transform, false)
-      piece <- Some p
-      
-    match piece with
-    | Some current ->
-      if (current <> p)
-      then
-        m.RemovePiece ()
-        add ()
-    | None ->
-      add ()
-    
-  member m.HighlightAsSelected playerColor =
-    Nullable.toOption image
-    |> Option.map (fun i -> i.color <- TileViewDefinitions.selectedColors.[playerColor].[color])
-    |> Option.orFinally (fun () -> Logger.warn "TileView: No image set")
-    m
-    
-  member m.HighlightAsConquerable playerColor =
-    Nullable.toOption image
-    |> Option.map (fun i -> i.color <- TileViewDefinitions.conquerableColors.[playerColor].[color])
-    |> Option.orFinally (fun () -> Logger.warn "TileView: No image set")
-    m
-    
-  member m.ResetColor () =
-    Nullable.toOption image
-    |> Option.map (fun i -> i.color <- TileViewDefinitions.baseColors.[color])
-    |> Option.orFinally (fun () -> Logger.warn "TileView: No image set")
-    m
 
   member m.OnTileChange (tile : Option<Tile>) _ =
     tile
@@ -113,7 +80,7 @@ type TileView () =
     
   member m.UpdateTile (tile : Tile) =
     color <- tile.Color
-    m.ResetColor ()
+    (m :> ITileView).ResetColor ()
     
   member m.OnClick () =
     flow <| selectClientTileWave (SelectClientTileAmplitude {
@@ -124,13 +91,50 @@ type TileView () =
   override m.Start () =
     base.Start () 
     unsubscribe <- observeTile coordinate m.OnTileChange
-    
-  member m.Init row column tile =
-    coordinate <- (row, column)
-    m.UpdateTile tile
-    |> ignore
-    m
-    
+
   override m.OnDestroy () =
     base.OnDestroy ()
     unsubscribe ()
+    
+  interface ITileView with      
+    member m.AddPiece (p : PieceView) =
+      let add () =
+        p.OnAddToTile m.MovePiece
+        p.gameObject.transform.SetParent(m.gameObject.transform, false)
+        piece <- Some p
+        
+      match piece with
+      | Some current ->
+        if (current <> p)
+        then
+          m.RemovePiece ()
+          add ()
+      | None ->
+        add ()
+    
+    member m.HighlightAsSelected playerColor =
+      Nullable.toOption image
+      |> Option.map (fun i -> i.color <- TileViewDefinitions.selectedColors.[playerColor].[color])
+      |> Option.orFinally (fun () -> Logger.warn "TileView: No image set")
+      m :> ITileView
+      
+    member m.HighlightAsConquerable playerColor =
+      Nullable.toOption image
+      |> Option.map (fun i -> i.color <- TileViewDefinitions.conquerableColors.[playerColor].[color])
+      |> Option.orFinally (fun () -> Logger.warn "TileView: No image set")
+      m :> ITileView
+      
+    member m.ResetColor () =
+      Nullable.toOption image
+      |> Option.map (fun i -> i.color <- TileViewDefinitions.baseColors.[color])
+      |> Option.orFinally (fun () -> Logger.warn "TileView: No image set")
+      m :> ITileView 
+          
+    member m.Init row column tile =
+      coordinate <- (row, column)
+      m.UpdateTile tile
+      |> ignore
+      m :> ITileView
+      
+    member m.Destroy () =
+      GameObject.Destroy (m)

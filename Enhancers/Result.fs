@@ -61,6 +61,11 @@ module Result =
     | Some v -> Ok v
     | None -> Error "No such value"
     
+  let expectOption<'T> msg o : Result<'T, string> =
+    match o with
+    | Some v -> Ok v
+    | None -> Error msg
+    
   let toOption<'T, 'E> (r : Result<'T, 'E>) : Option<'T> =
     match r with
     | Ok v -> Some v

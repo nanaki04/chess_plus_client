@@ -23,18 +23,25 @@ type BoardView () =
   
   let (>>=) = fun v f -> Option.bind f v
   let (<!>) = fun f v -> Option.map v f
-  let (<*>) = Option.apply  
+  let (<*>) = Option.apply
+  
+  member private m.InstantiateTile () =
+    tile
+    |> Nullable.toOption
+    |> Option.bind (fun t ->
+      match Nullable.toOption (t.GetComponent<TileView> ()), Nullable.toOption (t.GetComponent<Tile3DView> ()) with
+      | Some tileView, _ -> tileView :> ITileView |> Some
+      | _, Some tile3DView -> tile3DView :> ITileView |> Some
+      | _ -> None
+    )
   
   member private m.MakeTile row column t =
-    tile |> Nullable.toOption |> Option.map (fun (obj : GameObject) ->
-      GameObject.Instantiate (obj, m.transform) :?> GameObject
-      |> (fun obj -> obj.GetComponent<TileView>())
-      |> (fun tileView -> tileView.Init row column t)
-      |> (fun tileView -> ((row, column), tileView))
-    )
+    m.InstantiateTile ()
+    |> Option.map (fun tileView -> tileView.Init row column t)
+    |> Option.map (fun tileView -> ((row, column), tileView))
     
   member private m.RemoveTiles (tiles, highlightedTiles, pieces) =
-    Map.iter (fun _ (t : TileView) -> GameObject.Destroy(t.gameObject)) tiles
+    Map.iter (fun _ (t : ITileView) -> t.Destroy ()) tiles
     (Map.empty, highlightedTiles, pieces)
     
   member private m.MakeTiles tileWell (tiles, highlightedTiles, pieces) =
@@ -47,10 +54,10 @@ type BoardView () =
     |> fun newTiles -> (newTiles, highlightedTiles, pieces)
     
   member private m.ResetTileColors (tiles, highlightedTiles, pieces) =
-    List.iter (fun (t : TileView) -> t.ResetColor () |> ignore) highlightedTiles
+    List.iter (fun (t : ITileView) -> t.ResetColor () |> ignore) highlightedTiles
     (tiles, List.empty, pieces)
     
-  member private m.HighlightTiles tileSelectionWell (tiles : Map<Coordinate, TileView>, highlightedTiles, pieces) =
+  member private m.HighlightTiles tileSelectionWell (tiles : Map<Coordinate, ITileView>, highlightedTiles, pieces) =
     [
       tileSelectionWell.White.Selected
       >>= (fun s -> Map.tryFind s tiles)
@@ -75,7 +82,7 @@ type BoardView () =
     |> List.fold (fun acc tiles -> Option.map (List.append acc) tiles |> Option.defaultValue acc) []
     |> fun newHighlightedTiles -> (tiles, newHighlightedTiles, pieces)   
 
-  member private m.SpawnPieces pieceWell (tiles : Map<Coordinate, TileView>, highlightedTiles, pieces) =
+  member private m.SpawnPieces pieceWell (tiles : Map<Coordinate, ITileView>, highlightedTiles, pieces) =
     pieceWell
     |> Map.fold (fun (newPieces, oldPieces) coord piece ->
       let p = Types.Pieces.map id piece
