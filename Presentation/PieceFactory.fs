@@ -25,10 +25,15 @@ type PieceFactoryView () =
   let mutable (queen : GameObject) = null
     
   member private m.spawn prefab (data : Pieces) coord =
-      let piece = GameObject.Instantiate (prefab) :?> GameObject
-      
-      piece.GetComponent<PieceView> ()
-      |> fun (p : PieceView) -> p.Init data coord
+    let piece = GameObject.Instantiate (prefab) :?> GameObject
+    
+    match Nullable.toOption (piece.GetComponent<PieceView> ()), Nullable.toOption (piece.GetComponent<Piece3DView> ()) with
+    | Some pieceView, _ ->
+      (pieceView :> IPieceView).Init data coord |> Some
+    | _, Some pieceView ->
+      (pieceView :> IPieceView).Init data coord |> Some
+    | _ ->
+      None
     
   member m.Spawn piece coord =
     match piece with

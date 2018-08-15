@@ -100,12 +100,15 @@
     <Compile Include="Flow/Observers.fs" />
     <Compile Include="Presentation/Adapters.fs" />
     <Compile Include="Presentation/Presentation.fs" />
+    <Compile Include="Presentation/InputHandler.fs" />
     <Compile Include="Presentation/DomainRoot.fs" />
     <Compile Include="Presentation/UiComponent.fs" />
     <Compile Include="Presentation/Button.fs" />
     <Compile Include="Presentation/Input.fs" />
     <Compile Include="Presentation/Popups.fs" />
+    <Compile Include="Presentation/IPiece.fs" />
     <Compile Include="Presentation/Piece.fs" />
+    <Compile Include="Presentation/Piece3D.fs" />
     <Compile Include="Presentation/PieceFactory.fs" />
     <Compile Include="Presentation/ITile.fs" />
     <Compile Include="Presentation/Tile.fs" />

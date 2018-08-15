@@ -67,7 +67,7 @@ type TileView () =
   let mutable unsubscribe = fun () -> ()
     
   member m.RemovePiece () =
-    Option.map (fun (p : PieceView) -> p.Remove ()) piece
+    Option.map (fun (p : IPieceView) -> p.Remove ()) piece
     |> ignore
     
   member m.MovePiece () =
@@ -97,10 +97,10 @@ type TileView () =
     unsubscribe ()
     
   interface ITileView with      
-    member m.AddPiece (p : PieceView) =
+    member m.AddPiece (p : IPieceView) =
       let add () =
         p.OnAddToTile m.MovePiece
-        p.gameObject.transform.SetParent(m.gameObject.transform, false)
+        p.AddToParent m.gameObject.transform
         piece <- Some p
         
       match piece with

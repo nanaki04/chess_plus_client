@@ -3,21 +3,18 @@
 open UnityEngine
 open UnityEngine.UI
 open Result
-
-module PieceViewDefinitions =
-  let private rgb r g b =
-    new Color((float32 r) / 255.0f, (float32 g) / 255.0f, (float32 b) / 255.0f, 1.0f)
-
-  let baseColors =
-    Map.empty
-      .Add(White, rgb 255 255 255)
-      .Add(Black, rgb 40 30 20)
             
-type PieceView () =
+type Piece3DView () =
   inherit Presentation ()
   
   [<SerializeField>]
-  let mutable text : Text = null
+  let mutable blackMaterial : Material = null
+  
+  [<SerializeField>]
+  let mutable whiteMaterial : Material = null
+  
+  [<SerializeField>]
+  let mutable meshRenderer : MeshRenderer = null  
   
   let mutable removeFromTile = fun () -> ()
   
@@ -25,9 +22,17 @@ type PieceView () =
   
   let changeColor piece =
     let ({ Color = color } : Piece) = piece
-    Nullable.toResult text
-    <!> fun t -> t.color <- PieceViewDefinitions.baseColors.[color]
-    <!!> Logger.warn
+    match
+      piece,
+      Nullable.toOption meshRenderer,
+      Nullable.toOption blackMaterial,
+      Nullable.toOption whiteMaterial with
+    | { Color = White }, Some renderer, _, Some mat ->
+      renderer.material <- mat
+    | { Color = Black }, Some renderer, Some mat, _ ->
+      renderer.material <- mat
+    | _ ->
+      ()
     
   interface IPieceView with
     member m.IsPieceType piece =

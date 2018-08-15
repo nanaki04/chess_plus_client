@@ -28,6 +28,7 @@ type BoardView () =
   member private m.InstantiateTile () =
     tile
     |> Nullable.toOption
+    |> Option.map (fun prefab -> GameObject.Instantiate prefab :?> GameObject)
     |> Option.bind (fun t ->
       match Nullable.toOption (t.GetComponent<TileView> ()), Nullable.toOption (t.GetComponent<Tile3DView> ()) with
       | Some tileView, _ -> tileView :> ITileView |> Some
@@ -88,9 +89,9 @@ type BoardView () =
       let p = Types.Pieces.map id piece
       let pieceView =
         match Map.tryFind p.ID pieces with
-        | Some (pieceView : PieceView) ->
+        | Some (pieceView : IPieceView) ->
           if pieceView.IsPieceType piece then
-            pieceView.Set piece
+            pieceView.Set piece |> Some
           else
             pieceView.Remove ()
             pieceFactory.Spawn piece coord
@@ -98,17 +99,18 @@ type BoardView () =
           pieceFactory.Spawn piece coord
           
       pieceView
-      |> (fun pieceView ->
+      |> Option.map (fun pieceView ->
         Map.tryFind coord tiles
         <!> (fun tileView -> tileView.AddPiece pieceView)
         |> ignore
         pieceView
       )
-      |> (fun pieceView -> Map.add p.ID pieceView newPieces)
-      |> Tuple.add1 (Map.remove p.ID oldPieces)
+      |> Option.map (fun pieceView -> Map.add p.ID pieceView newPieces)
+      |> Option.map (fun newPieces -> Tuple.add1 (Map.remove p.ID oldPieces) newPieces)
+      |> Option.defaultValue (newPieces, oldPieces)
     ) (Map.empty, pieces)
     |> (fun (newPieces, oldPieces) ->
-      Map.iter (fun _ (p : PieceView) -> p.Remove ()) oldPieces
+      Map.iter (fun _ (p : IPieceView) -> p.Remove ()) oldPieces
       newPieces
     )
     |> fun newPieces -> (tiles, highlightedTiles, newPieces)

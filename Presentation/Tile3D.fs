@@ -14,9 +14,6 @@ open Result
             
 type Tile3DView () =
   inherit Presentation ()
-      
-  [<SerializeField>]
-  let mutable image : Image = null
   
   [<SerializeField>]
   let mutable blackMaterial : Material = null
@@ -25,22 +22,28 @@ type Tile3DView () =
   let mutable whiteMaterial : Material = null  
   
   [<SerializeField>]
-  let mutable blackSelectedMaterial : Material = null
+  let mutable blackSelectedBlackTileMaterial : Material = null
   
   [<SerializeField>]
-  let mutable whiteSelectedMaterial : Material = null
+  let mutable blackSelectedWhiteTileMaterial : Material = null  
   
   [<SerializeField>]
-  let mutable blackMovableMaterial : Material = null
+  let mutable whiteSelectedBlackTileMaterial : Material = null
   
   [<SerializeField>]
-  let mutable whiteMovableMaterial : Material = null
+  let mutable whiteSelectedWhiteTileMaterial : Material = null 
+   
+  [<SerializeField>]
+  let mutable blackConquerableBlackTileMaterial : Material = null
   
   [<SerializeField>]
-  let mutable blackConquerableMaterial : Material = null
+  let mutable blackConquerableWhiteTileMaterial : Material = null  
   
   [<SerializeField>]
-  let mutable whiteConquerableMaterial : Material = null
+  let mutable whiteConquerableBlackTileMaterial : Material = null
+  
+  [<SerializeField>]
+  let mutable whiteConquerableWhiteTileMaterial : Material = null  
   
   [<SerializeField>]
   let mutable meshRenderer : MeshRenderer = null
@@ -50,6 +53,7 @@ type Tile3DView () =
   let mutable color = White
         
   let mutable unsubscribe = fun () -> ()
+  let mutable unsubscribeClickMeshEvent = fun () -> ()
     
   member private m.SetPosition () =
     let (row, col) = coordinate
@@ -57,16 +61,43 @@ type Tile3DView () =
     |> Option.map (fun r ->
       new Vector3 (
         r.bounds.size.x * (Types.Row.toInt row |> float32),
-        r.bounds.size.y * (Types.Column.toInt col |> float32),
-        0.0f
+        0.0f,
+        r.bounds.size.z * (Types.Column.toInt col |> float32)
       )
     )
     |> Option.map (fun pos -> m.gameObject.transform.position <- pos)
     |> Result.expectOption "Could not set tile position"
     <!!> Logger.warn
+ 
+  member m.AdjustColor blackMat whiteMat =
+    Logger.warn "adjust tile color"
+    match Nullable.toOption meshRenderer, Nullable.toOption blackMat, Nullable.toOption whiteMat, color with
+    | Some r, Some mat, _, Black ->
+      Logger.warn "set mat black"
+      r.material <- mat
+    | Some r, _, Some mat, White ->
+      Logger.warn "set mat white"
+      r.material <- mat
+    | _ ->
+      Logger.warn "omg no match"
+      ()
     
+  member m.AdjustColorToSelected playerColor =
+    match playerColor with
+    | Black ->  
+      m.AdjustColor blackSelectedBlackTileMaterial blackSelectedWhiteTileMaterial
+    | White ->
+      m.AdjustColor whiteSelectedBlackTileMaterial whiteSelectedWhiteTileMaterial
+
+  member m.AdjustColorToConquerable playerColor =
+    match playerColor with
+    | Black ->
+      m.AdjustColor blackConquerableBlackTileMaterial blackConquerableWhiteTileMaterial
+    | White ->
+      m.AdjustColor whiteConquerableBlackTileMaterial whiteConquerableWhiteTileMaterial
+          
   member m.RemovePiece () =
-    Option.map (fun (p : PieceView) -> p.Remove ()) piece
+    Option.map (fun (p : IPieceView) -> p.Remove ()) piece
     |> ignore
     
   member m.MovePiece () =
@@ -87,19 +118,27 @@ type Tile3DView () =
     })
     <!!> Logger.warn
     
+  member m.OnClickMesh obj =
+    m.gameObject = obj
+    |> Option.fromBool
+    |> Option.map m.OnClick
+    |> ignore
+    
   override m.Start () =
     base.Start () 
     unsubscribe <- observeTile coordinate m.OnTileChange
+    unsubscribeClickMeshEvent <- ClickMeshEvents.register m.OnClickMesh
 
   override m.OnDestroy () =
     base.OnDestroy ()
     unsubscribe ()
+    unsubscribeClickMeshEvent ()
     
   interface ITileView with      
-    member m.AddPiece (p : PieceView) =
+    member m.AddPiece (p : IPieceView) =
       let add () =
         p.OnAddToTile m.MovePiece
-        p.gameObject.transform.SetParent(m.gameObject.transform, false)
+        p.AddToParent(m.gameObject.transform)
         piece <- Some p
         
       match piece with
@@ -112,45 +151,15 @@ type Tile3DView () =
         add ()
     
     member m.HighlightAsSelected playerColor =
-      match
-        Nullable.toOption meshRenderer,
-        Nullable.toOption whiteSelectedMaterial,
-        Nullable.toOption blackSelectedMaterial,
-        playerColor with
-      | Some renderer, Some whiteMat, _, White ->
-        renderer.materials.[0] <- whiteMat
-      | Some renderer, _, Some blackMat, Black ->
-        renderer.materials.[0] <- blackMat
-      | _ ->
-        ()
+      m.AdjustColorToSelected playerColor
       m :> ITileView
       
     member m.HighlightAsConquerable playerColor =
-      match
-        Nullable.toOption meshRenderer,
-        Nullable.toOption whiteConquerableMaterial,
-        Nullable.toOption blackConquerableMaterial,
-        playerColor with
-      | Some renderer, Some whiteMat, _, White ->
-        renderer.materials.[0] <- whiteMat
-      | Some renderer, _, Some blackMat, Black ->
-        renderer.materials.[0] <- blackMat
-      | _ ->
-        ()
+      m.AdjustColorToConquerable playerColor
       m :> ITileView
       
     member m.ResetColor () =
-      match
-        Nullable.toOption meshRenderer,
-        Nullable.toOption whiteMaterial,
-        Nullable.toOption blackMaterial,
-        color with
-      | Some renderer, Some whiteMat, _, White ->
-        renderer.materials.[0] <- whiteMat
-      | Some renderer, _, Some blackMat, Black ->
-        renderer.materials.[0] <- blackMat
-      | _ ->
-        ()
+      m.AdjustColor blackMaterial whiteMaterial
       m :> ITileView
           
     member m.Init row column tile =
