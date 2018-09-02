@@ -25,12 +25,13 @@ type InputHandlerView () =
   inherit Presentation ()
   
   [<SerializeField>]
-  let mutable (mainCamera : Camera) = null
+  let mutable (mainCamera : CameraView) = Unchecked.defaultof<CameraView>
   
   override m.Update () =
     Input.GetMouseButtonUp (0)
     |> Option.fromBool
     |> Option.bind (fun _ -> Nullable.toOption mainCamera)
+    |> Option.bind (fun cameraView -> cameraView.ActiveCamera ())
     |> Option.map (fun cam -> cam.ScreenPointToRay Input.mousePosition)
     |> Option.bind (fun ray ->
       let hit = ref (new RaycastHit ())

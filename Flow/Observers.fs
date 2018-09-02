@@ -22,12 +22,15 @@ module Observers =
     watcher findDuelState react
     |> guard
     
+  let observePlayerColor (react : Option<Color> -> LifeWell -> unit) =
+    watcher findPlayerColor react
+    |> guard
+    
   let observeTiles (react : TileWell -> TileWell -> unit) =
     watcher id react
     |> guardTileWell
     
   let observeTile coord (react : Option<Tile> -> TileWell -> unit) =
-    let (row, col) = coord
     watcher (findTile coord) react
     |> guardTileWell
     

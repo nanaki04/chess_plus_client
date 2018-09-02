@@ -70,16 +70,12 @@ type Tile3DView () =
     <!!> Logger.warn
  
   member m.AdjustColor blackMat whiteMat =
-    Logger.warn "adjust tile color"
     match Nullable.toOption meshRenderer, Nullable.toOption blackMat, Nullable.toOption whiteMat, color with
     | Some r, Some mat, _, Black ->
-      Logger.warn "set mat black"
       r.material <- mat
     | Some r, _, Some mat, White ->
-      Logger.warn "set mat white"
       r.material <- mat
     | _ ->
-      Logger.warn "omg no match"
       ()
     
   member m.AdjustColorToSelected playerColor =

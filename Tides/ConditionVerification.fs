@@ -195,7 +195,6 @@ module ConditionVerification =
       |> Result.bind (Operators.isMet operator)
             
     | MoveCount, _, Some p, _ ->
-      Logger.warn "MoveCount"
       Types.Pieces.map (fun p -> p.MoveCount) p
       |> IntValue
       |> Logger.inspect "int value"
@@ -203,7 +202,6 @@ module ConditionVerification =
       |> Logger.inspect "result"
       
     | MoveCount, _, _, _ ->
-      Logger.warn "Invalid Move Count"
       Ok false
       
     | OtherPieceType pieceType, _, p, { PieceWell = Some pieceWell} ->

@@ -156,7 +156,7 @@ module VisionQuest =
     reportWave wave
     next wave
     
-  let report wave wellCollection =
+  let private reportWellCollection wave wellCollection =
     let historyItem = new HistoryItemDto ()
     match wave, exportMould wave with
     | ((domain, invocation), _), Ok mould ->
@@ -168,5 +168,12 @@ module VisionQuest =
       sendItem historyItem |> ignore
     | _, Error err ->
       Logger.error err
-    
-  VisionQuestTcp.listen ()
+  
+  let report wave wellCollection =
+    EnvAccessor.env.VisionQuestDebuggingEnabled
+    |> Option.fromBool
+    |> Option.map (fun _ -> reportWellCollection wave wellCollection)
+    |> ignore
+  
+  if EnvAccessor.env.VisionQuestDebuggingEnabled  
+  then VisionQuestTcp.listen ()

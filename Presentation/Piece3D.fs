@@ -20,8 +20,7 @@ type Piece3DView () =
   
   let mutable pieceType : string = ""
   
-  let changeColor piece =
-    let ({ Color = color } : Piece) = piece
+  member m.ChangeColor (piece : Piece) =
     match
       piece,
       Nullable.toOption meshRenderer,
@@ -29,8 +28,10 @@ type Piece3DView () =
       Nullable.toOption whiteMaterial with
     | { Color = White }, Some renderer, _, Some mat ->
       renderer.material <- mat
+      m.gameObject.transform.localEulerAngles <- new Vector3 (0.0f, 0.0f, 180.0f)
     | { Color = Black }, Some renderer, Some mat, _ ->
       renderer.material <- mat
+      m.gameObject.transform.localEulerAngles <- new Vector3 (0.0f, 0.0f, 0.0f)
     | _ ->
       ()
     
@@ -39,11 +40,11 @@ type Piece3DView () =
       Types.Pieces.toString piece = pieceType
     
     member m.Set piece =
-      Types.Pieces.map changeColor piece
+      Types.Pieces.map m.ChangeColor piece
       m :> IPieceView
       
-    member m.Init (piece : Pieces) coord =
-      Types.Pieces.map changeColor piece
+    member m.Init (piece : Pieces) _coord =
+      Types.Pieces.map m.ChangeColor piece
       pieceType <- Types.Pieces.toString piece
       m :> IPieceView
       
