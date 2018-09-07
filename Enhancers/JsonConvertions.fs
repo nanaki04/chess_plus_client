@@ -27,6 +27,7 @@ module DtoTypes =
     let mutable otherOwner = Unchecked.defaultof<DuelistTypeDto>
     let mutable row = 0
     let mutable column = 0
+    let mutable pieceTypes : string array = Array.empty
     
     member m.Type
       with get () = ``type``
@@ -46,6 +47,9 @@ module DtoTypes =
     member m.Column
       with get () = column
       and set (v) = column <- v
+    member m.PieceTypes
+      with get () = pieceTypes
+      and set (v) = pieceTypes <- v
             
   type OperatorDto () =
     let mutable ``type`` = null
@@ -503,6 +507,9 @@ module JsonConversions =
       | Condition.Column c ->
         dto.Column <- Column.toInt c
         dto
+      | RemainingPieceTypes pieceTypes ->
+        dto.PieceTypes <- Array.ofList pieceTypes
+        dto
       | _ -> dto
       
     let import (condition : ConditionDto) =
@@ -520,6 +527,7 @@ module JsonConversions =
       | "ExposedWhileMoving" -> ExposedWhileMoving |> Ok
       | "Row" -> Row.fromInt condition.Row <!> Condition.Row
       | "Column" -> Column.fromInt condition.Column <!> Condition.Column
+      | "RemainingPieceTypes" -> Array.toList condition.PieceTypes |> Condition.RemainingPieceTypes |> Ok
       | _ -> Error ("No such condition: " + condition.Type)
     
   module OperatorDto =

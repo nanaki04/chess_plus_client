@@ -56,6 +56,7 @@ type Condition =
 | ExposedWhileMoving
 | Row of Row
 | Column of Column
+| RemainingPieceTypes of string list
 
 type Operator =
 | Is
@@ -256,6 +257,7 @@ module Types =
       | ExposedWhileMoving -> "ExposedWhileMoving"
       | Row _ -> "Row"
       | Column _ -> "Column"
+      | RemainingPieceTypes _ -> "RemainingPieceTypes"
       
   module Piece =
     let create id color rules coordinate moveCount =

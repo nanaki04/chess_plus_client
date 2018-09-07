@@ -822,21 +822,21 @@ module Moulds =
     | (loc, StartDuelAmplitude ampl) -> StartDuelMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (loc, AddDuelistAmplitude ampl) -> AddDuelistMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (loc, UpdateDuelStateAmplitude ampl) -> UpdateDuelStateMould.export (loc, ampl) |> JsonConversions.export |> Ok
-    | (("player", "in"), DefaultAmplitude ampl) -> Mould.export ("player", "in") |> JsonConversions.export |> Ok
+    | (("player", "in"), DefaultAmplitude _ampl) -> Mould.export ("player", "in") |> JsonConversions.export |> Ok
     | (loc, OpenPopupAmplitude ampl) -> OpenPopupMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (loc, ClosePopupAmplitude ampl) -> ClosePopupMould.export (loc, ampl) |> JsonConversions.export |> Ok
-    | (("login_popup", "click_ok"), DefaultAmplitude ampl) -> Mould.export ("login_popup", "click_ok") |> JsonConversions.export |> Ok
+    | (("login_popup", "click_ok"), DefaultAmplitude _ampl) -> Mould.export ("login_popup", "click_ok") |> JsonConversions.export |> Ok
     | (("login_popup", "change_name_text"), TextAmplitude ampl) -> TextMould.export (("login_popup", "change_name_text"), ampl) |> JsonConversions.export |> Ok
     | (("play_duel_popup", "new_button"), UiComponentAmplitude ampl) -> UiComponentMould.export (("play_duel_popup", "new_button"), ampl) |> JsonConversions.export |> Ok
     | (("play_duel_popup", "join_button"), UiComponentAmplitude ampl) -> UiComponentMould.export (("play_duel_popup", "join_button"), ampl) |> JsonConversions.export |> Ok
-    | (("play_duel_popup", "click_join"), DefaultAmplitude ampl) -> Mould.export ("play_duel_popup", "click_join") |> JsonConversions.export |> Ok
-    | (("play_duel_popup", "click_new"), DefaultAmplitude ampl) -> Mould.export ("play_duel_popup", "click_new") |> JsonConversions.export |> Ok
+    | (("play_duel_popup", "click_join"), DefaultAmplitude _ampl) -> Mould.export ("play_duel_popup", "click_join") |> JsonConversions.export |> Ok
+    | (("play_duel_popup", "click_new"), DefaultAmplitude _ampl) -> Mould.export ("play_duel_popup", "click_new") |> JsonConversions.export |> Ok
     | (loc, AddOpenDuelsAmplitude ampl) -> AddOpenDuelsMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (loc, ConquerTileAmplitude ampl) -> ConquerTileMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (loc, SelectTileAmplitude ampl) -> SelectTileMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (loc, PromotePieceAmplitude ampl) -> PromotePieceMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (loc, SelectClientTileAmplitude ampl) -> SelectClientTileMould.export (loc, ampl) |> JsonConversions.export |> Ok
-    | (("tile", "deselect"), DefaultAmplitude ampl) -> Mould.export ("tile", "deselect") |> JsonConversions.export |> Ok
+    | (("tile", "deselect"), DefaultAmplitude _ampl) -> Mould.export ("tile", "deselect") |> JsonConversions.export |> Ok
     | (loc, ConfirmDeselectTileAmplitude ampl) -> ConfirmDeselectTileMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (loc, MovePieceAmplitude ampl) -> MovePieceMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (loc, AddPieceAmplitude ampl) -> AddPieceMould.export (loc, ampl) |> JsonConversions.export |> Ok
