@@ -28,16 +28,16 @@ module Tides =
       
   let tides : Tide<LifeWell> list = [
     tide<UpdateTcpConnectionAmplitude> updateTcpConnectionLocation (fun amplitude well ->
-      match well with
-      | { Connection = { Tcp = false; Udp = false }} -> VisionQuest.quit ()
+      match well, amplitude.Connected with
+      | { Connection = { Udp = false }}, false -> VisionQuest.quit ()
       | _ -> ()
       
       LifeWell.updateConnection (fun c -> { c with Tcp = amplitude.Connected }) well
     );
     
     tide<UpdateUdpConnectionAmplitude> updateUdpConnectionLocation (fun amplitude well ->
-      match well with
-      | { Connection = { Tcp = false; Udp = false }} -> VisionQuest.quit ()
+      match well, amplitude.Connected with
+      | { Connection = { Tcp = false; }}, false -> VisionQuest.quit ()
       | _ -> ()
     
       LifeWell.updateConnection (fun c -> { c with Udp = amplitude.Connected }) well
