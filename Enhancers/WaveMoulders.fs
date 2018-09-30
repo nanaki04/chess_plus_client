@@ -271,6 +271,7 @@ module Moulds =
     let mutable tileSelections = Unchecked.defaultof<TileSelectionWellDto>
     let mutable pieces = Unchecked.defaultof<PieceWellDto>
     let mutable rules = Unchecked.defaultof<RuleWellDto>
+    let mutable buffs = Unchecked.defaultof<BuffWellDto>
     
     member m.Location
       with get() = location
@@ -290,6 +291,9 @@ module Moulds =
     member m.Rules
       with get () = rules
       and set (v) = rules <- v
+    member m.Buffs
+      with get () = buffs
+      and set (v) = buffs <- v
       
     static member export (wave) =
       let (loc, ampl : StartDuelAmplitude) = wave
@@ -300,23 +304,26 @@ module Moulds =
       m.TileSelections <- ampl.TileSelections |> TileSelectionWellDto.export
       m.Pieces <- ampl.Pieces |> PieceWellDto.export
       m.Rules <- ampl.Rules |> RuleWellDto.export
+      m.Buffs <- ampl.Buffs |> BuffWellDto.export
       m
     
     interface Importable with
       member m.import () =
-        Ok (fun duel tiles tileSelections pieces rules ->
+        Ok (fun duel tiles tileSelections pieces rules buffs ->
           StartDuelAmplitude {
             Duel = duel;
             Tiles = tiles;
             TileSelections = tileSelections;
             Pieces = pieces;
             Rules = rules;
+            Buffs = buffs;
           })
         <*> DuelDto.import m.Duel
         <*> TileWellDto.import m.Tiles
         <*> TileSelectionWellDto.import m.TileSelections
         <*> PieceWellDto.import m.Pieces
         <*> RuleWellDto.import m.Rules
+        <*> BuffWellDto.import m.Buffs
         <!> startDuelWave
         
   type JoinDuelMould () =
@@ -501,7 +508,34 @@ module Moulds =
           })
         <*> PieceDto.import  m.Piece
         <!> promotePieceWave 
-        
+ 
+  type UpdateBuffsMould () =
+    let mutable location = Unchecked.defaultof<LocationMould>
+    let mutable buffs = Unchecked.defaultof<BuffWellDto>
+    
+    member m.Location
+      with get() = location
+      and set(v) = location <- v
+    member m.Buffs
+      with get() = buffs
+      and set(v) = buffs <- v
+      
+    static member export (wave) =
+      let (loc, ampl : UpdateBuffsAmplitude) = wave
+      let m = new UpdateBuffsMould ()
+      m.Location <- LocationMould.export loc
+      m.Buffs <- ampl.Buffs |> BuffWellDto.export
+      m
+    
+    interface Importable with
+      member m.import () =
+        Ok (fun buffs ->
+          UpdateBuffsAmplitude {
+            Buffs = buffs;
+          })
+        <*> BuffWellDto.import m.Buffs
+        <!> updateBuffsWave
+          
   type ConquerTileMould () =
     let mutable location = Unchecked.defaultof<LocationMould>
     let mutable piece = Unchecked.defaultof<PieceDto>
@@ -841,6 +875,7 @@ module Moulds =
     | (loc, MovePieceAmplitude ampl) -> MovePieceMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (loc, AddPieceAmplitude ampl) -> AddPieceMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (loc, RemovePieceAmplitude ampl) -> RemovePieceMould.export (loc, ampl) |> JsonConversions.export |> Ok
+    | (loc, UpdateBuffsAmplitude ampl) -> UpdateBuffsMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | ((domain, invocation), _) -> Error ("Unmatched Wave: " + domain + ":" + invocation)
                   
   let inline make<'t when 't :> Importable> mould  =
@@ -870,5 +905,6 @@ module Moulds =
     | l when l = confirmDeselectTileLocation -> make<ConfirmDeselectTileMould> mould
     | l when l = addOpenDuelsLocation -> make<AddOpenDuelsMould> mould
     | l when l = updateDuelStateLocation -> make<UpdateDuelStateMould> mould
+    | l when l = updateBuffsLocation -> make<UpdateBuffsMould> mould
     | l -> Error ("Wave location not found: " + (Tuple.fst l).ToString() + ", " + (Tuple.snd l).ToString())
     

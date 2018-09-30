@@ -46,7 +46,14 @@ module Waves =
   let newDuelLocation = ("duel", "new")
   let newDuelWave amplitude = (newDuelLocation, amplitude)
   
-  type StartDuelAmplitude = { Duel : Duel; Tiles : TileWell; TileSelections : TileSelectionWell; Pieces : PieceWell; Rules : RuleWell }
+  type StartDuelAmplitude = {
+    Duel : Duel;
+    Tiles : TileWell;
+    TileSelections : TileSelectionWell;
+    Pieces : PieceWell;
+    Rules : RuleWell;
+    Buffs : BuffWell;
+  }
   let startDuelLocation = ("duel", "add")
   let startDuelWave amplitude = (startDuelLocation, amplitude)
   
@@ -77,6 +84,10 @@ module Waves =
   type PromotePieceAmplitude = { Piece : Pieces }
   let promotePieceLocation = ("piece", "promote")
   let promotePieceWave amplitude = (promotePieceLocation, amplitude)
+
+  type UpdateBuffsAmplitude = { Buffs : BuffWell }
+  let updateBuffsLocation = ("buffs", "update")
+  let updateBuffsWave amplitude = (updateBuffsLocation, amplitude)
   
   type SelectTileAmplitude = { Player : Color; Coordinate : Coordinate }
   let selectTileLocation = ("tile", "confirm_select")
@@ -140,6 +151,7 @@ module Waves =
   | MovePieceAmplitude of MovePieceAmplitude
   | ConquerTileAmplitude of ConquerTileAmplitude
   | PromotePieceAmplitude of PromotePieceAmplitude
+  | UpdateBuffsAmplitude of UpdateBuffsAmplitude
   | SelectClientTileAmplitude of SelectClientTileAmplitude
   | SelectTileAmplitude of SelectTileAmplitude
   | ConfirmDeselectTileAmplitude of ConfirmDeselectTileAmplitude

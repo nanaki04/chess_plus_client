@@ -9,6 +9,8 @@ module Fetchers =
   
   let mutable fetchUiWell = fun () -> UiWell.initial
   
+  let mutable fetchBuffWell = fun () -> ([] : BuffWell)
+  
   let mutable fetchTileWell = fun () -> TileWell.initial
   
   let mutable fetchTileSelectionWell = fun () -> TileSelectionWell.initial

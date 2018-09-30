@@ -4,6 +4,7 @@ module WellLogger =
   open UnityEngine
   open Logger
   open JsonConversions
+  open JsonConversions
   open Well
   
   let private logWell well =
@@ -20,6 +21,10 @@ module WellLogger =
       |> log
     | TileSelectionWell w ->
       TileSelectionWellDto.export w
+      |> export
+      |> log
+    | BuffWell w ->
+      BuffWellDto.export w
       |> export
       |> log
     | TileWell w ->

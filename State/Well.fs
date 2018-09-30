@@ -69,6 +69,8 @@ type PieceWell = Map<Coordinate, Pieces>
 
 type RuleWell = Rules
 
+type BuffWell = Buff list
+
 type LifeWell = {
   Player : Option<Player>;
   Duel : Option<Duel>;
@@ -81,6 +83,7 @@ type WellCollection = {
   PieceWell : Option<PieceWell>;
   TileSelectionWell : Option<TileSelectionWell>;
   TileWell : Option<TileWell>;
+  BuffWell : Option<BuffWell>;
   UiWell : Option<UiWell>;
 }
   
@@ -92,6 +95,7 @@ module Well =
   | PieceWell of PieceWell
   | TileSelectionWell of TileSelectionWell
   | TileWell of TileWell
+  | BuffWell of BuffWell
   | UiWell of UiWell
   
   module Tile =
@@ -287,13 +291,14 @@ module Well =
       }
       
   module WellCollection =
-    let create lifeWell ruleWell pieceWell tileSelectionWell tileWell uiWell =
+    let create lifeWell ruleWell pieceWell tileSelectionWell tileWell buffWell uiWell =
       {
         LifeWell = lifeWell;
         RuleWell = ruleWell;
         PieceWell = pieceWell;
         TileSelectionWell = tileSelectionWell;
         TileWell = tileWell;
+        BuffWell = buffWell;
         UiWell = uiWell;
       }
       
@@ -304,5 +309,6 @@ module Well =
         PieceWell = None;
         TileSelectionWell = None;
         TileWell = None;
+        BuffWell = None;
         UiWell = None;
       }

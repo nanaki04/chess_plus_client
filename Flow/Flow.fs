@@ -17,6 +17,13 @@ module Flow =
     
   Fetchers.fetchLifeWell <- fetch
   
+  let (private doFlowBuffWell, fetchBuffWell, guardBuffWell) = invoke ([] : BuffWell) buffTides [] []
+  let flowBuffs wave =
+    doFlowBuffWell wave
+    wave
+    
+  Fetchers.fetchBuffWell <- fetchBuffWell
+  
   let (private doFlowUiWell, fetchUiWell, guardUiWell) = invoke UiWell.initial uiTides [] []
   let flowUi wave =
     doFlowUiWell wave
@@ -54,6 +61,7 @@ module Flow =
   
   let private flowAll : (Wave -> unit) =
     flowLifeWell
+    >> flowBuffs
     >> flowUi
     >> flowTile
     >> flowTileSelection
@@ -71,6 +79,7 @@ module Flow =
       PieceWell = fetchPieceWell () |> Some;
       TileWell = fetchTileWell () |> Some;
       TileSelectionWell = fetchTileSelectionWell () |> Some;
+      BuffWell = fetchBuffWell () |> Some;
       UiWell = fetchUiWell () |> Some;
     } 
     |> VisionQuest.report wave

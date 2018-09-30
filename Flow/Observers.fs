@@ -55,6 +55,10 @@ module Observers =
     watcher id react
     |> guardTileSelectionWell
     
+  let observeBuffs (react : BuffWell -> BuffWell -> unit) =
+    watcher id react
+    |> guardBuffWell
+    
   let observe (react : LifeWell -> unit) =
     watcher find (fun well _ -> react well)
     |> guard
