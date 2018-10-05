@@ -61,8 +61,7 @@ module Fetchers =
     |> findPiece coord
     
   let fetchPieceRuleIDs coord =
-    fetchPieceWell ()
-    |> findPieceRuleIDs coord
+    findPieceRuleIDs coord (fetchPieceWell ()) (fetchBuffWell ())
     
   let fetchPieceRules coord =
     let rules = fetchRuleWell ()

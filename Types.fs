@@ -333,6 +333,9 @@ module Types =
       
     let id p =
       map (fun p -> p.ID) p
+    
+    let moveCount p =
+      map (fun p -> p.MoveCount) p
       
     let toString p =
       match p with

@@ -85,6 +85,8 @@ module Pool =
         Types.Pieces.coord p >>= findTarget offset
       | MoveComboRule { MyOffset = offset; }, Some p ->
         Types.Pieces.coord p >>= findTarget offset
+      | ConquerComboRule { TargetOffset = targetOffset }, Some p ->
+        Types.Pieces.coord p >>= findTarget targetOffset
       | _, _ ->
         None
      
@@ -92,6 +94,8 @@ module Pool =
       match rule, piece with
       | MoveComboRule { Other = offset }, Some p ->
         Types.Pieces.coord p >>= findTarget offset
+      | ConquerComboRule { TargetOffset = targetOffset }, Some p ->
+        Types.Pieces.coord p >>= findTarget targetOffset
       | _, _ ->
         None   
         
@@ -110,6 +114,10 @@ module Pool =
     let findOtherPieceType rule piece well =
       findOtherPiece rule piece well
       <!> Types.Pieces.toString
+      
+    let findOtherPieceMovementCount rule piece well =
+      findOtherPiece rule piece well
+      <!> Types.Pieces.moveCount
                  
     let isPlayerPiece coord well =
       match findPiece coord well, fetchClientDuelist () with

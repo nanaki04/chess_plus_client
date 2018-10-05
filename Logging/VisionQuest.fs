@@ -77,12 +77,11 @@ module VisionQuest =
     packet.Domain <- "client"
     packet.Invocation <- "remove"
     packet.Payload <- new PayloadDto ()
+    packet.Payload.Json <- ""
     
     packet
     |> export
     |> VisionQuestTcp.send
-    
-    Ok
     
   let private reportWave wave =
     let ((domain, invocation), _) = wave
