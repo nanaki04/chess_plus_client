@@ -9,6 +9,7 @@ module Tides =
   open JsonConversions
   open Moulds
   open Microsoft.FSharp.Reflection
+  open Types
   open Well
   
   type Tide<'W> = (string * string) * ((string * string) * Amplitude -> 'W -> 'W)
@@ -101,10 +102,6 @@ module Tides =
   let uiTide<'A> = makeTide<'A, UiWell>
   
   let uiTides : Tide<UiWell> list = [
-    uiTide<StartDuelAmplitude> startDuelLocation (fun amplitude well ->
-      Pool.UI.closePopup PlayDuel well
-    );   
-    
     uiTide<DefaultAmplitude> requireLoginLocation (fun () well ->
       Pool.UI.openPopup Login well
     ); 
@@ -165,6 +162,86 @@ module Tides =
       Pool.UI.UiComponent.interactable playDuelPopupNewButtonLocation false
       >> Pool.UI.UiComponent.interactable playDuelPopupJoinButtonLocation false
       <| well    
+    );
+    
+    uiTide<UiComponentAmplitude> whitePlayerInformationPlateLocation (fun amplitude well ->
+      Pool.UI.UiComponent.set whitePlayerInformationPlateLocation amplitude well
+    );
+    
+    uiTide<UiComponentAmplitude> blackPlayerInformationPlateLocation (fun amplitude well ->
+      Pool.UI.UiComponent.set blackPlayerInformationPlateLocation amplitude well
+    );
+    
+    uiTide<StartDuelAmplitude> startDuelLocation (fun amplitude well ->
+      let ({ Duel = { Duelists = duelists }} : StartDuelAmplitude) = amplitude
+      
+      let well =
+        Pool.UI.closePopup PlayDuel well
+        |> Pool.UI.UiComponent.visible gameMenuLocation true
+        
+      List.fold (fun well duelist ->
+        match duelist with
+        | { Color = White; Name = name } ->
+          Pool.UI.UiComponent.visible whitePlayerInformationPlateLocation true well
+          |> Pool.UI.DynamicText.set whitePlayerNameDynamicText name
+        | { Color = Black; Name = name } ->
+          Pool.UI.UiComponent.visible blackPlayerInformationPlateLocation true well
+          |> Pool.UI.DynamicText.set blackPlayerNameDynamicText name
+      ) well duelists
+    );
+    
+    uiTide<AddDuelistAmplitude> addDuelistLocation (fun amplitude well ->
+      match amplitude with
+      | { Duelist = { Color = White; Name = name }} ->
+        Pool.UI.UiComponent.visible whitePlayerInformationPlateLocation true well
+        |> Pool.UI.DynamicText.set whitePlayerNameDynamicText name
+      | { Duelist = { Color = Black; Name = name }} ->
+        Pool.UI.UiComponent.visible blackPlayerInformationPlateLocation true well
+        |> Pool.UI.DynamicText.set blackPlayerNameDynamicText name   
+    );
+    
+    uiTide<UiComponentAmplitude> gameMenuLocation (fun amplitude well ->
+      Pool.UI.UiComponent.set gameMenuLocation amplitude well
+    );  
+      
+    uiTide<DefaultAmplitude> gameMenuClickForfeitButtonLocation (fun _ well ->
+      DefaultMould.export (forfeitDuelLocation, ())
+      |> upstream
+      
+      well
+    );
+    
+    uiTide<DefaultAmplitude> gameMenuClickRemiseButtonLocation (fun _ well ->
+      DefaultMould.export (proposeRemiseLocation, ())
+      |> upstream
+      
+      well
+    );
+    
+    uiTide<DefaultAmplitude> proposeRemiseLocation (fun _ well ->
+      Pool.UI.openPopup ConfirmRemise well
+    );
+    
+    uiTide<DefaultAmplitude> confirmRemisePopupClickYesButtonLocation (fun _ well ->
+      DefaultMould.export (remiseLocation, ())
+      |> upstreamTcp
+      
+      Pool.UI.closePopup ConfirmRemise well
+    );
+    
+    uiTide<DefaultAmplitude> confirmRemisePopupClickNoButtonLocation (fun _ well ->
+      DefaultMould.export (refuseRemiseLocation, ())
+      |> upstreamTcp
+      
+      Pool.UI.closePopup ConfirmRemise well
+    );
+    
+    uiTide<DefaultAmplitude> refuseRemiseLocation (fun _ well ->
+      Pool.UI.openPopup RemiseRefused well
+    );
+    
+    uiTide<DefaultAmplitude> remiseRefusedPopupClickOkButtonLocation (fun _ well ->
+      Pool.UI.closePopup RemiseRefused well
     );
   ]
   
@@ -242,7 +319,7 @@ module Tides =
       
       Movements.resetMovableTiles color well
       |> Pool.TileSelections.deselect color
-    );       
+    );    
   ]
   
   let pieceTide<'A> = makeTide<'A, PieceWell>

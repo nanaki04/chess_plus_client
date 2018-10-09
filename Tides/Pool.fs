@@ -170,3 +170,7 @@ module Pool =
         update location (fun c ->
           { c with Visible = v }
         ) well
+        
+    module DynamicText =
+      let set location text well =
+        updateDynamicText location (fun _ -> Some text) well

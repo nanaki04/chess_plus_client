@@ -40,6 +40,10 @@ type PopupsView () =
         m.Instantiate "Popup/LoginPopup"
       | PlayDuel ->
         m.Instantiate "Popup/PlayDuelPopup"
+      | ConfirmRemise ->
+        m.Instantiate "Popup/ConfirmRemisePopup"
+      | RemiseRefused ->
+        m.Instantiate "Popup/RemiseRefusedPopup"
         
     openPopups <- Map.add popup obj openPopups
     

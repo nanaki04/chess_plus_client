@@ -6,6 +6,7 @@ open Waves
 module Moulds =
   open Result
   open System
+  open Types
 
   type Importable =
     abstract member import : unit -> Result<Maelstrom.Wave<Amplitude>, string>
@@ -44,6 +45,25 @@ module Moulds =
       let dto = new Mould ()
       dto.Location <- LocationMould.export location
       dto
+ 
+  type DefaultMould () =
+    let mutable location = Unchecked.defaultof<LocationMould>
+    
+    member m.Location
+      with get() = location
+      and set(v) = location <- v
+    
+    static member export (wave) =
+      let (loc, ampl : DefaultAmplitude) = wave
+      let m = new DefaultMould ()
+      m.Location <- LocationMould.export loc
+      m
+      
+    interface Importable with
+      member m.import () =
+        Nullable.toResult m.Location
+        >>= fun loc -> loc.import ()
+        <!> fun loc -> (loc, DefaultAmplitude ())
       
   type TextMould () =
     let mutable location = Unchecked.defaultof<LocationMould>
@@ -844,7 +864,7 @@ module Moulds =
             Popup = popup;
           })
         <*> (PopupDto.import m.Popup)
-        <!> closePopupWave   
+        <!> closePopupWave
         
   let exportMould wave =
     match wave with
@@ -876,6 +896,20 @@ module Moulds =
     | (loc, AddPieceAmplitude ampl) -> AddPieceMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (loc, RemovePieceAmplitude ampl) -> RemovePieceMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (loc, UpdateBuffsAmplitude ampl) -> UpdateBuffsMould.export (loc, ampl) |> JsonConversions.export |> Ok
+    | (("white_player", "information_plate"), DefaultAmplitude _ampl) -> Mould.export ("white_player", "information_plate") |> JsonConversions.export |> Ok
+    | (("black_player", "information_plate"), DefaultAmplitude _ampl) -> Mould.export ("black_player", "information_plate") |> JsonConversions.export |> Ok
+    | (("white_player", "name"), DefaultAmplitude _ampl) -> Mould.export ("white_player", "name") |> JsonConversions.export |> Ok
+    | (("black_player", "name"), DefaultAmplitude _ampl) -> Mould.export ("black_player", "name") |> JsonConversions.export |> Ok
+    | (("game_menu", "menu"), DefaultAmplitude _ampl) -> Mould.export ("game_menu", "menu") |> JsonConversions.export |> Ok
+    | (("game_menu", "click_forfeit"), DefaultAmplitude _ampl) -> Mould.export ("game_menu", "click_forfeit") |> JsonConversions.export |> Ok
+    | (("game_menu", "click_remise"), DefaultAmplitude _ampl) -> Mould.export ("game_menu", "click_remise") |> JsonConversions.export |> Ok
+    | (("duelist", "forfeit"), DefaultAmplitude _ampl) -> Mould.export ("duelist", "forfeit") |> JsonConversions.export |> Ok
+    | (("duelist", "propose_remise"), DefaultAmplitude _ampl) -> Mould.export ("duelist", "propose_remise") |> JsonConversions.export |> Ok
+    | (("duelist", "remise"), DefaultAmplitude _ampl) -> Mould.export ("duelist", "remise") |> JsonConversions.export |> Ok
+    | (("duelist", "refuse_remise"), DefaultAmplitude _ampl) -> Mould.export ("duelist", "refuse_remise") |> JsonConversions.export |> Ok
+    | (("confirm_remise_popup", "click_yes"), DefaultAmplitude _ampl) -> Mould.export ("confirm_remise_popup", "click_yes") |> JsonConversions.export |> Ok
+    | (("confirm_remise_popup", "click_no"), DefaultAmplitude _ampl) -> Mould.export ("confirm_remise_popup", "click_no") |> JsonConversions.export |> Ok
+    | (("refuse_remise_popup", "click_ok"), DefaultAmplitude _ampl) -> Mould.export ("refuse_remise_popup", "click_ok") |> JsonConversions.export |> Ok
     | ((domain, invocation), _) -> Error ("Unmatched Wave: " + domain + ":" + invocation)
                   
   let inline make<'t when 't :> Importable> mould  =
@@ -905,6 +939,19 @@ module Moulds =
     | l when l = confirmDeselectTileLocation -> make<ConfirmDeselectTileMould> mould
     | l when l = addOpenDuelsLocation -> make<AddOpenDuelsMould> mould
     | l when l = updateDuelStateLocation -> make<UpdateDuelStateMould> mould
-    | l when l = updateBuffsLocation -> make<UpdateBuffsMould> mould
+    | l when l = whitePlayerInformationPlateLocation -> make<DefaultMould> mould
+    | l when l = blackPlayerInformationPlateLocation -> make<DefaultMould> mould
+    | l when l = whitePlayerNameDynamicText -> make<DefaultMould> mould
+    | l when l = blackPlayerNameDynamicText -> make<DefaultMould> mould
+    | l when l = gameMenuLocation -> make<DefaultMould> mould
+    | l when l = gameMenuClickForfeitButtonLocation -> make<DefaultMould> mould
+    | l when l = gameMenuClickRemiseButtonLocation -> make<DefaultMould> mould
+    | l when l = forfeitDuelLocation -> make<DefaultMould> mould
+    | l when l = proposeRemiseLocation -> make<DefaultMould> mould
+    | l when l = remiseLocation -> make<DefaultMould> mould
+    | l when l = refuseRemiseLocation -> make<DefaultMould> mould
+    | l when l = confirmRemisePopupClickYesButtonLocation -> make<DefaultMould> mould
+    | l when l = confirmRemisePopupClickNoButtonLocation -> make<DefaultMould> mould
+    | l when l = remiseRefusedPopupClickOkButtonLocation -> make<DefaultMould> mould
     | l -> Error ("Wave location not found: " + (Tuple.fst l).ToString() + ", " + (Tuple.snd l).ToString())
     

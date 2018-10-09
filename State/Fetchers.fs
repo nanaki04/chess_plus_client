@@ -156,3 +156,7 @@ module Fetchers =
       fetchConquerableTileCoords color
     | None ->
       List.empty
+      
+  let fetchDynamicText location =
+    let well = fetchUiWell ()
+    findDynamicText location well

@@ -3,3 +3,5 @@
 type Popup =
 | Login
 | PlayDuel
+| ConfirmRemise
+| RemiseRefused

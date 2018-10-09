@@ -52,10 +52,15 @@ type UiComponent = {
 
 type UiComponents = Map<string, UiComponent>
 
+type DynamicText = string
+
+type DynamicTexts = Map<string, DynamicText>
+
 type UiWell = {
   Popups : Popup list;
   PopupStates : PopupStates;
   Components : UiComponents;
+  DynamicTexts : DynamicTexts;
 }
 
 type TileWell = Map<Coordinate, Tile>
@@ -225,13 +230,17 @@ module Well =
       
   module UiComponents =
     let initial = Map.empty
+    
+  module DynamicTexts =
+    let initial = Map.empty
       
   module UiWell =
-    let create popups popupStates components =
+    let create popups popupStates components dynamicTexts =
       {
         Popups = popups;
         PopupStates = popupStates;
         Components = components;
+        DynamicTexts = dynamicTexts;
       }
       
     let initial =
@@ -239,6 +248,7 @@ module Well =
         Popups = [];
         PopupStates = PopupStates.initial;
         Components = UiComponents.initial;
+        DynamicTexts = DynamicTexts.initial;
       }
       
   module TileWell =

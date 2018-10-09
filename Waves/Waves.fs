@@ -65,6 +65,11 @@ module Waves =
   let addDuelistLocation = ("duelist", "add")
   let addDuelistWave amplitude = (addDuelistLocation, amplitude)
   
+  let forfeitDuelLocation = ("duelist", "forfeit") 
+  let proposeRemiseLocation = ("duelist", "propose_remise")
+  let remiseLocation = ("duelist", "remise") 
+  let refuseRemiseLocation = ("duelist", "refuse_remise")
+  
   type AddPieceAmplitude = { Piece : Pieces; Coordinate : Coordinate }
   let addPieceLocation = ("piece", "add")
   let addPieceWave amplitude = (addPieceLocation, amplitude)
@@ -129,6 +134,20 @@ module Waves =
   let playDuelPopupJoinButtonLocation = ("play_duel_popup", "join_button")
   let playDuelPopupClickJoinLocation = ("play_duel_popup", "click_join")
   let playDuelPopupClickNewLocation = ("play_duel_popup", "click_new")
+  
+  let whitePlayerInformationPlateLocation = ("white_player", "information_plate")
+  let blackPlayerInformationPlateLocation = ("black_player", "information_plate")
+  let whitePlayerNameDynamicText = ("white_player", "name")
+  let blackPlayerNameDynamicText = ("black_player", "name")
+  
+  let gameMenuLocation = ("game_menu", "menu")
+  let gameMenuClickForfeitButtonLocation = ("game_menu", "click_forfeit")
+  let gameMenuClickRemiseButtonLocation = ("game_menu", "click_remise")
+  
+  let confirmRemisePopupClickYesButtonLocation = ("confirm_remise_popup", "click_yes")
+  let confirmRemisePopupClickNoButtonLocation = ("confirm_remise_popup", "click_no")
+  
+  let remiseRefusedPopupClickOkButtonLocation = ("remise_refused_popup", "click_ok")
 
   type Amplitude =
   | DefaultAmplitude of DefaultAmplitude

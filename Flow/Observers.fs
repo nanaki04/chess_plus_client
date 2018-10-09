@@ -50,6 +50,11 @@ module Observers =
     let id = Types.Location.toString location
     watcher (findUiComponent id) react
     |> guardUiWell
+    
+  let observeDynamicText location (react : Option<string> -> UiWell -> unit) =
+    let id = Types.Location.toString location
+    watcher (findDynamicText id) react
+    |> guardUiWell
   
   let observeSelections (react : TileSelectionWell -> TileSelectionWell -> unit) =
     watcher id react
