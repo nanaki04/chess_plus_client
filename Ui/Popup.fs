@@ -5,3 +5,7 @@ type Popup =
 | PlayDuel
 | ConfirmRemise
 | RemiseRefused
+| AwaitRematchResponse
+| AwaitRemiseResponse
+| ConfirmRematch
+| RematchRefused

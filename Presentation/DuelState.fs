@@ -14,6 +14,9 @@ type DuelStateView () =
   [<SerializeField>]
   let mutable messageBoard : Text = null
   
+  [<SerializeField>]
+  let mutable background : GameObject = null
+  
   let mutable unsubscribe = fun () -> ()
   
   let mutable active = false
@@ -31,6 +34,8 @@ type DuelStateView () =
       active <- true
     | Win color ->
       msgBoard.text <- if findPlayerColor well = Some color then "Victory" else "Defeat"
+      active <- true
+    | RequestRematch _ ->
       active <- true
       
   member m.DisplayNextTurn duelist (msgBoard : Text) well =
@@ -66,5 +71,8 @@ type DuelStateView () =
     Nullable.toOption messageBoard
     |> Option.map(fun msgBoard -> msgBoard.gameObject.SetActive(active))
     |> ignore
-    ()
+    
+    Nullable.toOption background
+    |> Option.map(fun bg -> bg.SetActive(active))
+    |> ignore
     

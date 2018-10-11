@@ -5,8 +5,9 @@ open UnityEngine
 type Env () =
   inherit ScriptableObject ()
   
-  [<SerializeField>]
-  let mutable udpClientPort = 5000
+  // MEMO made udp client port be assigned automatically
+  // [<SerializeField>]
+  // let mutable udpClientPort = 5000 
   [<SerializeField>]
   let mutable udpServerAddress = "127.0.0.1"
   [<SerializeField>]
@@ -22,8 +23,8 @@ type Env () =
   [<SerializeField>]
   let mutable visionQuestDebuggingEnabled = false
   
-  member m.UdpClientPort
-    with get () = udpClientPort
+  // member m.UdpClientPort
+  //   with get () = udpClientPort
   member m.UdpServerAddress
     with get () = udpServerAddress
   member m.UdpServerPort

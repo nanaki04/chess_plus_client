@@ -962,6 +962,10 @@ module JsonConversions =
         dto.Type <- "Win"
         dto.Value <- ColorDto.export color
         dto
+      | RequestRematch color ->
+        dto.Type <- "RequestRematch"
+        dto.Value <- ColorDto.export color
+        dto
 
     let import (endedState : EndedStateDto) =
       match endedState.Type with
@@ -970,6 +974,9 @@ module JsonConversions =
       | "Win" -> 
         ColorDto.import endedState.Value
         <!> (fun color -> Win color)
+      | "RequestRematch" ->
+        ColorDto.import endedState.Value
+        <!> (fun color -> RequestRematch color)
       | t ->
         Error ("No such EndedState: " + t)
 
@@ -1034,6 +1041,10 @@ module JsonConversions =
       | PlayDuel -> "PlayDuel"
       | ConfirmRemise -> "ConfirmRemise"
       | RemiseRefused -> "RemiseRefused"
+      | ConfirmRematch -> "ConfirmRematch"
+      | AwaitRematchResponse -> "AwaitRematchResponse"
+      | AwaitRemiseResponse -> "AwaitRemiseResponse"
+      | RematchRefused -> "RematchRefused"
       
     let import (popup : PopupDto) =
       match popup with
@@ -1041,6 +1052,10 @@ module JsonConversions =
       | "PlayDuel" -> Ok PlayDuel
       | "ConfirmRemise" -> Ok ConfirmRemise
       | "RemiseRefused" -> Ok RemiseRefused
+      | "ConfirmRematch" -> Ok ConfirmRematch
+      | "AwaitRematchResponse" -> Ok AwaitRematchResponse
+      | "AwaitRemiseResponse" -> Ok AwaitRemiseResponse
+      | "RematchRefused" -> Ok RematchRefused
       | d -> Error ("No such popup: " + d)
       
   module LoginPopupStateDto =
