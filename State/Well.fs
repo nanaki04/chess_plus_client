@@ -21,6 +21,7 @@ type Selection = {
 type EndedState =
 | Remise
 | Win of Color
+| RequestRematch of Color
 
 type DuelState =
 | Turn of DuelistType
