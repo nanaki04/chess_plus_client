@@ -9,6 +9,7 @@ module Tides =
   open JsonConversions
   open Moulds
   open Microsoft.FSharp.Reflection
+  open Types
   open Well
   
   type Tide<'W> = (string * string) * ((string * string) * Amplitude -> 'W -> 'W)
@@ -77,6 +78,14 @@ module Tides =
       ) well
     );
     
+    tide<RemoveDuelistAmplitude> removeDuelistLocation (fun amplitude well ->
+      LifeWell.updateDuelists (fun lst ->
+        List.filter (fun duelist ->
+          duelist.Name = amplitude.Duelist.Name
+        ) lst
+      ) well
+    );
+    
     tide<UpdateDuelStateAmplitude> updateDuelStateLocation (fun amplitude well ->
       let ({ DuelState = duelState } : UpdateDuelStateAmplitude) = amplitude
       LifeWell.updateDuel (fun duel ->
@@ -101,10 +110,6 @@ module Tides =
   let uiTide<'A> = makeTide<'A, UiWell>
   
   let uiTides : Tide<UiWell> list = [
-    uiTide<StartDuelAmplitude> startDuelLocation (fun amplitude well ->
-      Pool.UI.closePopup PlayDuel well
-    );   
-    
     uiTide<DefaultAmplitude> requireLoginLocation (fun () well ->
       Pool.UI.openPopup Login well
     ); 
@@ -140,13 +145,24 @@ module Tides =
       Pool.UI.UiComponent.set playDuelPopupJoinButtonLocation amplitude well
     );
     
+    uiTide<UiComponentAmplitude> duelStatePlateClickJoinLocation (fun amplitude well ->
+      Mould.export getOpenDuelsLocation
+      |> upstream
+      
+      Pool.UI.UiComponent.set duelStatePlateClickJoinLocation amplitude well
+    );
+    
     uiTide<UiComponentAmplitude> playDuelPopupNewButtonLocation (fun amplitude well ->
       Pool.UI.UiComponent.set playDuelPopupNewButtonLocation amplitude well
     );
     
     uiTide<AddOpenDuelsAmplitude> addOpenDuelsLocation (fun amplitude well ->
-      List.length amplitude.Duels > 0
-      |> Pool.UI.UiComponent.interactable playDuelPopupJoinButtonLocation <| well
+      let hasOpenDuels = List.length amplitude.Duels > 0
+      
+      Pool.UI.UiComponent.interactable playDuelPopupJoinButtonLocation hasOpenDuels well
+      |> Pool.UI.UiComponent.interactable playDuelPopupNewButtonLocation true
+      |> Pool.UI.UiComponent.interactable duelStatePlateJoinButtonLocation hasOpenDuels
+      |> Pool.UI.UiComponent.interactable duelStatePlateNewButtonLocation true
     );
     
     uiTide<DefaultAmplitude> playDuelPopupClickNewLocation (fun amplitude well ->
@@ -165,6 +181,224 @@ module Tides =
       Pool.UI.UiComponent.interactable playDuelPopupNewButtonLocation false
       >> Pool.UI.UiComponent.interactable playDuelPopupJoinButtonLocation false
       <| well    
+    );
+    
+    uiTide<UiComponentAmplitude> whitePlayerInformationPlateLocation (fun amplitude well ->
+      Pool.UI.UiComponent.set whitePlayerInformationPlateLocation amplitude well
+    );
+    
+    uiTide<UiComponentAmplitude> blackPlayerInformationPlateLocation (fun amplitude well ->
+      Pool.UI.UiComponent.set blackPlayerInformationPlateLocation amplitude well
+    );
+    
+    uiTide<StartDuelAmplitude> startDuelLocation (fun amplitude well ->
+      let ({ Duel = { Duelists = duelists }} : StartDuelAmplitude) = amplitude
+      
+      let well =
+        Pool.UI.closePopup PlayDuel well
+        |> Pool.UI.closePopup AwaitRematchResponse
+        |> Pool.UI.UiComponent.visible gameMenuLocation true
+        |> Pool.UI.UiComponent.interactable gameMenuForfeitButtonLocation true
+        |> Pool.UI.UiComponent.interactable gameMenuRemiseButtonLocation true
+        |> Pool.UI.UiComponent.interactable duelStatePlateNewButtonLocation true
+        |> Pool.UI.UiComponent.interactable duelStatePlateRematchButtonLocation true
+        |> Pool.UI.UiComponent.interactable duelStatePlateJoinButtonLocation true
+        |> Pool.UI.UiComponent.visible whitePlayerInformationPlateLocation false
+        |> Pool.UI.UiComponent.visible blackPlayerInformationPlateLocation false
+        
+      List.fold (fun well duelist ->
+        match duelist with
+        | { Color = White; Name = name } ->
+          Pool.UI.UiComponent.visible whitePlayerInformationPlateLocation true well
+          |> Pool.UI.DynamicText.set whitePlayerNameDynamicText name
+        | { Color = Black; Name = name } ->
+          Pool.UI.UiComponent.visible blackPlayerInformationPlateLocation true well
+          |> Pool.UI.DynamicText.set blackPlayerNameDynamicText name
+      ) well duelists
+    );
+    
+    uiTide<UiComponentAmplitude> gameMenuLocation (fun amplitude well ->
+      Pool.UI.UiComponent.set gameMenuLocation amplitude well
+    );  
+      
+    uiTide<DefaultAmplitude> gameMenuClickForfeitButtonLocation (fun _ well ->
+      DefaultMould.export (forfeitDuelLocation, ())
+      |> upstream
+      
+      well
+    );
+    
+    uiTide<DefaultAmplitude> gameMenuClickRemiseButtonLocation (fun _ well ->
+      DefaultMould.export (proposeRemiseLocation, ())
+      |> upstream
+      
+      Pool.UI.openPopup AwaitRemiseResponse well
+      |> Pool.UI.UiComponent.interactable gameMenuForfeitButtonLocation false
+      |> Pool.UI.UiComponent.interactable gameMenuRemiseButtonLocation false
+    );
+    
+    uiTide<DefaultAmplitude> proposeRemiseLocation (fun _ well ->
+      Pool.UI.openPopup ConfirmRemise well
+      |> Pool.UI.UiComponent.interactable gameMenuForfeitButtonLocation false
+      |> Pool.UI.UiComponent.interactable gameMenuRemiseButtonLocation false
+    );
+    
+    uiTide<DefaultAmplitude> confirmRemisePopupClickYesButtonLocation (fun _ well ->
+      DefaultMould.export (remiseLocation, ())
+      |> upstreamTcp
+      
+      Pool.UI.closePopup ConfirmRemise well
+    );
+    
+    uiTide<DefaultAmplitude> confirmRemisePopupClickNoButtonLocation (fun _ well ->
+      DefaultMould.export (refuseRemiseLocation, ())
+      |> upstreamTcp
+      
+      Pool.UI.closePopup ConfirmRemise well
+      |> Pool.UI.UiComponent.interactable gameMenuForfeitButtonLocation true
+      |> Pool.UI.UiComponent.interactable gameMenuRemiseButtonLocation true
+    );
+    
+    uiTide<DefaultAmplitude> refuseRemiseLocation (fun _ well ->
+      Pool.UI.closePopup AwaitRemiseResponse well
+      |> Pool.UI.openPopup RemiseRefused
+      |> Pool.UI.UiComponent.interactable gameMenuForfeitButtonLocation true
+      |> Pool.UI.UiComponent.interactable gameMenuRemiseButtonLocation true
+    );
+    
+    uiTide<DefaultAmplitude> remiseRefusedPopupClickOkButtonLocation (fun _ well ->
+      Pool.UI.closePopup RemiseRefused well
+    );
+    
+    uiTide<UiComponentAmplitude> duelStatePlateMenuLocation (fun amplitude well ->
+      Pool.UI.UiComponent.set duelStatePlateMenuLocation amplitude well
+    );    
+    
+    uiTide<UpdateDuelStateAmplitude> updateDuelStateLocation (fun amplitude well ->
+      let setGameMenuEnabled enabled well =
+        Pool.UI.UiComponent.interactable gameMenuForfeitButtonLocation enabled well
+        |> Pool.UI.UiComponent.interactable gameMenuRemiseButtonLocation enabled
+        |> Pool.UI.closePopup AwaitRemiseResponse
+        |> Pool.UI.closePopup ConfirmRemise
+    
+      match amplitude.DuelState with
+      | Ended (Win _) ->
+        Pool.UI.UiComponent.visible duelStatePlateMenuLocation true well
+        |> setGameMenuEnabled false
+      | Ended Remise ->
+        Pool.UI.UiComponent.visible duelStatePlateMenuLocation true well
+        |> setGameMenuEnabled false
+      | Ended (RequestRematch color) ->
+        let well =
+          Pool.UI.UiComponent.visible duelStatePlateMenuLocation false well
+          |> setGameMenuEnabled false
+        
+        if Pool.isPlayer color
+        then Pool.UI.openPopup AwaitRematchResponse well
+        else Pool.UI.openPopup ConfirmRematch well
+      | _ ->
+        Pool.UI.UiComponent.visible duelStatePlateMenuLocation false well
+        |> setGameMenuEnabled true
+    );
+    
+    uiTide<AddDuelistAmplitude> addDuelistLocation (fun amplitude well ->
+      match amplitude with
+      | { Duelist = { Color = White; Name = name }} ->
+        Pool.UI.UiComponent.visible whitePlayerInformationPlateLocation true well
+        |> Pool.UI.DynamicText.set whitePlayerNameDynamicText name
+      | { Duelist = { Color = Black; Name = name }} ->
+        Pool.UI.UiComponent.visible blackPlayerInformationPlateLocation true well
+        |> Pool.UI.DynamicText.set blackPlayerNameDynamicText name
+      |> Pool.UI.UiComponent.interactable duelStatePlateRematchButtonLocation true
+    );
+    
+    uiTide<RemoveDuelistAmplitude> removeDuelistLocation (fun amplitude well ->
+      match amplitude with
+      | { Duelist = { Color = White; }} ->
+        Pool.UI.UiComponent.visible whitePlayerInformationPlateLocation false well
+        |> Pool.UI.DynamicText.set whitePlayerNameDynamicText ""
+      | { Duelist = { Color = Black; }} ->
+        Pool.UI.UiComponent.visible blackPlayerInformationPlateLocation false well
+        |> Pool.UI.DynamicText.set blackPlayerNameDynamicText ""
+      // TODO count duelist when more than 2 players would be supported
+      |> Pool.UI.UiComponent.interactable duelStatePlateRematchButtonLocation false
+    );
+    
+    uiTide<UiComponentAmplitude> duelStatePlateRematchButtonLocation (fun amplitude well ->
+      Pool.UI.UiComponent.set duelStatePlateRematchButtonLocation amplitude well
+    );
+    
+    uiTide<UiComponentAmplitude> duelStatePlateNewButtonLocation (fun amplitude well ->
+      Pool.UI.UiComponent.set duelStatePlateNewButtonLocation amplitude well
+    );
+    
+    uiTide<UiComponentAmplitude> duelStatePlateJoinButtonLocation (fun amplitude well ->
+      Pool.UI.UiComponent.set duelStatePlateJoinButtonLocation amplitude well
+    );  
+          
+    uiTide<UiComponentAmplitude> gameMenuForfeitButtonLocation (fun amplitude well ->
+      Pool.UI.UiComponent.set gameMenuForfeitButtonLocation amplitude well
+    );
+    
+    uiTide<UiComponentAmplitude> gameMenuRemiseButtonLocation (fun amplitude well ->
+      Pool.UI.UiComponent.set gameMenuRemiseButtonLocation amplitude well
+    );   
+    
+    uiTide<DefaultAmplitude> duelStatePlateClickRematchLocation (fun _ well ->
+      DefaultMould.export (requestRematchLocation, ())
+      |> upstreamTcp
+      
+      Pool.UI.UiComponent.interactable duelStatePlateRematchButtonLocation false well
+      |> Pool.UI.UiComponent.interactable duelStatePlateNewButtonLocation false
+      |> Pool.UI.UiComponent.interactable duelStatePlateJoinButtonLocation false
+    );
+    
+    uiTide<DefaultAmplitude> duelStatePlateClickNewLocation (fun _ well ->
+      DefaultMould.export (removeDuelistLocation, ())
+      |> upstreamTcp
+      
+      NewDuelMould.export (newDuelLocation, { Map = Classic })
+      |> upstreamTcp
+      
+      Pool.UI.UiComponent.interactable duelStatePlateRematchButtonLocation false well
+      |> Pool.UI.UiComponent.interactable duelStatePlateNewButtonLocation false
+      |> Pool.UI.UiComponent.interactable duelStatePlateJoinButtonLocation false
+    );
+    
+    uiTide<DefaultAmplitude> duelStatePlateClickJoinLocation (fun _ well ->
+      DefaultMould.export (removeDuelistLocation, ())
+      |> upstreamTcp
+    
+      JoinDuelMould.export (joinDuelLocation, { ID = "any" })
+      |> upstreamTcp
+    
+      Pool.UI.UiComponent.interactable duelStatePlateRematchButtonLocation false well
+      |> Pool.UI.UiComponent.interactable duelStatePlateNewButtonLocation false
+      |> Pool.UI.UiComponent.interactable duelStatePlateJoinButtonLocation false
+    );
+    
+    uiTide<DefaultAmplitude> requestRematchLocation (fun _ well ->
+      Pool.UI.openPopup ConfirmRematch well
+      |> Pool.UI.UiComponent.interactable duelStatePlateRematchButtonLocation false
+      |> Pool.UI.UiComponent.interactable duelStatePlateNewButtonLocation false
+      |> Pool.UI.UiComponent.interactable duelStatePlateJoinButtonLocation false      
+    );
+    
+    uiTide<DefaultAmplitude> confirmRematchPopupClickYesLocation (fun _ well ->
+      DefaultMould.export (rematchLocation, ())
+      |> upstreamTcp
+    
+      Pool.UI.closePopup ConfirmRematch well
+    );
+    
+    uiTide<DefaultAmplitude> confirmRematchPopupClickNoLocation (fun _ well ->
+      DefaultMould.export (refuseRematchLocation, ())
+      |> upstreamTcp
+      
+      Pool.UI.closePopup ConfirmRematch well
+      |> Pool.UI.UiComponent.interactable duelStatePlateRematchButtonLocation true
+      |> Pool.UI.UiComponent.interactable duelStatePlateNewButtonLocation true
+      |> Pool.UI.UiComponent.interactable duelStatePlateJoinButtonLocation true
     );
   ]
   
@@ -242,7 +476,7 @@ module Tides =
       
       Movements.resetMovableTiles color well
       |> Pool.TileSelections.deselect color
-    );       
+    );    
   ]
   
   let pieceTide<'A> = makeTide<'A, PieceWell>

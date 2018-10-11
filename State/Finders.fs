@@ -204,6 +204,14 @@ module Finders =
     |> findUiComponents
     |> Map.tryFind id
     
+  let findDynamicTexts well =
+    well.DynamicTexts
+    
+  let findDynamicText id well =
+    well
+    |> findDynamicTexts
+    |> Map.tryFind id
+    
   let findOwnSelectedTileCoords tileSelectionWell lifeWell =
     findPlayerColor lifeWell
     >>= (fun c -> findSelectedTileCoord c tileSelectionWell)

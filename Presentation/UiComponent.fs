@@ -25,6 +25,8 @@ type UiComponentView () =
     |> Nullable.toResult
     <!> fun b -> b.interactable <- uiComponent.Interactable
     |> ignore
+    
+    m.gameObject.SetActive uiComponent.Visible
   
   member m.OnComponentChange uiComponent _ =
     uiComponent
@@ -37,11 +39,11 @@ type UiComponentView () =
     unsubscribe <- observeUiComponent (domain, invocation) m.OnComponentChange
     
     Logger.log (Types.Location.toString (domain, invocation))
+    Logger.warn state
     UiComponentDto.import state
     <!> (fun uiComponent ->
       flow ((domain, invocation), UiComponentAmplitude uiComponent)
     )
-    <!!> Logger.warn
     
   override m.Start () =
     base.Start ()

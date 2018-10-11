@@ -318,10 +318,15 @@ module DtoTypes =
   
   type UiComponentsDto = IDictionary<string, UiComponentDto>
   
+  type DynamicTextDto = string
+  
+  type DynamicTextsDto = IDictionary<string, DynamicTextDto>
+  
   type UiWellDto () =
     let mutable popups = Array.empty;
     let mutable popupStates = Unchecked.defaultof<PopupStatesDto>
     let mutable components = Unchecked.defaultof<UiComponentsDto>
+    let mutable dynamicTexts = Unchecked.defaultof<DynamicTextsDto>
         
     member m.Popups
       with get () = popups
@@ -332,6 +337,9 @@ module DtoTypes =
     member m.Components
       with get () = components
       and set (v) = components <- v
+    member m.DynamicTexts
+      with get () = dynamicTexts
+      and set (v) = dynamicTexts <- v
     
   type TileWellDto = IDictionary<CoordinateDto, TileDto>
   
@@ -954,6 +962,10 @@ module JsonConversions =
         dto.Type <- "Win"
         dto.Value <- ColorDto.export color
         dto
+      | RequestRematch color ->
+        dto.Type <- "RequestRematch"
+        dto.Value <- ColorDto.export color
+        dto
 
     let import (endedState : EndedStateDto) =
       match endedState.Type with
@@ -962,6 +974,9 @@ module JsonConversions =
       | "Win" -> 
         ColorDto.import endedState.Value
         <!> (fun color -> Win color)
+      | "RequestRematch" ->
+        ColorDto.import endedState.Value
+        <!> (fun color -> RequestRematch color)
       | t ->
         Error ("No such EndedState: " + t)
 
@@ -1024,11 +1039,23 @@ module JsonConversions =
       match popup with
       | Login -> "Login"
       | PlayDuel -> "PlayDuel"
+      | ConfirmRemise -> "ConfirmRemise"
+      | RemiseRefused -> "RemiseRefused"
+      | ConfirmRematch -> "ConfirmRematch"
+      | AwaitRematchResponse -> "AwaitRematchResponse"
+      | AwaitRemiseResponse -> "AwaitRemiseResponse"
+      | RematchRefused -> "RematchRefused"
       
     let import (popup : PopupDto) =
       match popup with
       | "Login" -> Ok Login
       | "PlayDuel" -> Ok PlayDuel
+      | "ConfirmRemise" -> Ok ConfirmRemise
+      | "RemiseRefused" -> Ok RemiseRefused
+      | "ConfirmRematch" -> Ok ConfirmRematch
+      | "AwaitRematchResponse" -> Ok AwaitRematchResponse
+      | "AwaitRemiseResponse" -> Ok AwaitRemiseResponse
+      | "RematchRefused" -> Ok RematchRefused
       | d -> Error ("No such popup: " + d)
       
   module LoginPopupStateDto =
@@ -1051,7 +1078,6 @@ module JsonConversions =
       Ok PopupStates.create
       <*> LoginPopupStateDto.import popupStates.LoginPopupState    
 
-  [<System.Serializable>]
   module UiComponentDto =
     let export (uiComponent : UiComponent) =
       let dto = new UiComponentDto ()
@@ -1061,8 +1087,8 @@ module JsonConversions =
       
     let import (uiComponent : UiComponentDto) =
       Ok UiComponent.create
-      <*> Nullable.toResult uiComponent.Visible
-      <*> Nullable.toResult uiComponent.Interactable
+      <*> Ok uiComponent.Visible
+      <*> Ok uiComponent.Interactable
    
   module UiComponentsDto =
     let export (uiComponents : UiComponents) =
@@ -1078,12 +1104,25 @@ module JsonConversions =
       |> Result.unwrapCol
       <!> Col.toMap
       
+  module DynamicTextsDto =
+    let export (dynamicTexts : DynamicTexts) =
+      dynamicTexts
+      |> Map
+      |> Col.toDict
+      
+    let import (dynamicTexts : DynamicTextsDto) =
+      dynamicTexts
+      |> Dict
+      |> Col.toMap
+      |> Ok
+      
   module UiWellDto =
     let export (ui : UiWell) =
       let dto = new UiWellDto ()
       dto.Popups <- List.map PopupDto.export ui.Popups |> List.toArray
       dto.PopupStates <- PopupStatesDto.export ui.PopupStates
       dto.Components <- UiComponentsDto.export ui.Components
+      dto.DynamicTexts <- DynamicTextsDto.export ui.DynamicTexts
       dto
       
     let import (ui : UiWellDto) =
@@ -1091,6 +1130,7 @@ module JsonConversions =
       <*> (ui.Popups |> (List.ofArray >> List.map PopupDto.import >> Result.unwrap))
       <*> PopupStatesDto.import ui.PopupStates
       <*> UiComponentsDto.import ui.Components
+      <*> DynamicTextsDto.import ui.DynamicTexts
       
   module TileWellDto =
     let export (tileWell : TileWell) =
