@@ -21,6 +21,7 @@ type Selection = {
 type EndedState =
 | Remise
 | Win of Color
+| RequestRematch of Color
 
 type DuelState =
 | Turn of DuelistType
@@ -52,10 +53,15 @@ type UiComponent = {
 
 type UiComponents = Map<string, UiComponent>
 
+type DynamicText = string
+
+type DynamicTexts = Map<string, DynamicText>
+
 type UiWell = {
   Popups : Popup list;
   PopupStates : PopupStates;
   Components : UiComponents;
+  DynamicTexts : DynamicTexts;
 }
 
 type TileWell = Map<Coordinate, Tile>
@@ -69,6 +75,8 @@ type PieceWell = Map<Coordinate, Pieces>
 
 type RuleWell = Rules
 
+type BuffWell = Buff list
+
 type LifeWell = {
   Player : Option<Player>;
   Duel : Option<Duel>;
@@ -81,6 +89,7 @@ type WellCollection = {
   PieceWell : Option<PieceWell>;
   TileSelectionWell : Option<TileSelectionWell>;
   TileWell : Option<TileWell>;
+  BuffWell : Option<BuffWell>;
   UiWell : Option<UiWell>;
 }
   
@@ -92,6 +101,7 @@ module Well =
   | PieceWell of PieceWell
   | TileSelectionWell of TileSelectionWell
   | TileWell of TileWell
+  | BuffWell of BuffWell
   | UiWell of UiWell
   
   module Tile =
@@ -221,13 +231,17 @@ module Well =
       
   module UiComponents =
     let initial = Map.empty
+    
+  module DynamicTexts =
+    let initial = Map.empty
       
   module UiWell =
-    let create popups popupStates components =
+    let create popups popupStates components dynamicTexts =
       {
         Popups = popups;
         PopupStates = popupStates;
         Components = components;
+        DynamicTexts = dynamicTexts;
       }
       
     let initial =
@@ -235,6 +249,7 @@ module Well =
         Popups = [];
         PopupStates = PopupStates.initial;
         Components = UiComponents.initial;
+        DynamicTexts = DynamicTexts.initial;
       }
       
   module TileWell =
@@ -287,13 +302,14 @@ module Well =
       }
       
   module WellCollection =
-    let create lifeWell ruleWell pieceWell tileSelectionWell tileWell uiWell =
+    let create lifeWell ruleWell pieceWell tileSelectionWell tileWell buffWell uiWell =
       {
         LifeWell = lifeWell;
         RuleWell = ruleWell;
         PieceWell = pieceWell;
         TileSelectionWell = tileSelectionWell;
         TileWell = tileWell;
+        BuffWell = buffWell;
         UiWell = uiWell;
       }
       
@@ -304,5 +320,6 @@ module Well =
         PieceWell = None;
         TileSelectionWell = None;
         TileWell = None;
+        BuffWell = None;
         UiWell = None;
       }

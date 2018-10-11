@@ -74,6 +74,7 @@
     <Compile Include="Connection/Tcp.fs" />
     <Compile Include="Connection/Udp.fs" />
     <Compile Include="Connection/VisionQuestTcp.fs" />
+    <Compile Include="Presentation\DynamicText.fs" />
     <Compile Include="Types.fs" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="ChessPlus.fs" />

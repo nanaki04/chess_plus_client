@@ -103,7 +103,9 @@ module DtoTypes =
     let mutable offset = Unchecked.defaultof<int array>
     let mutable myMovement = Unchecked.defaultof<int array>
     let mutable otherMovement = Unchecked.defaultof<int array>
+    let mutable targetOffset = Unchecked.defaultof<int array>
     let mutable ranks = Unchecked.defaultof<int>
+    let mutable buffID = Unchecked.defaultof<int>
     
     member m.Type
       with get () = ``type``
@@ -123,9 +125,15 @@ module DtoTypes =
     member m.OtherMovement
       with get () = otherMovement
       and set (v) = otherMovement <- v
+    member m.TargetOffset
+      with get () = targetOffset
+      and set (v) = targetOffset <- v
     member m.Ranks
       with get () = ranks
       and set (v) = ranks <- v
+    member m.BuffID
+      with get () = buffID
+      and set (v) = buffID <- v
       
   type RulesDto = IDictionary<int, RuleDto>
   
@@ -155,6 +163,47 @@ module DtoTypes =
     member m.MoveCount
       with get () = moveCount
       and set (v) = moveCount <- v
+
+  type BuffTypeDto () =
+    let mutable ``type`` = Unchecked.defaultof<string>
+    let mutable rules = Array.empty
+    
+    member m.Type
+      with get () = ``type``
+      and set (v) = ``type`` <- v
+    member m.Rules
+      with get () = rules
+      and set (v) = rules <- v    
+
+  type BuffDurationDto () =
+    let mutable ``type`` = Unchecked.defaultof<string>
+    let mutable turn = Unchecked.defaultof<int>
+    
+    member m.Type
+      with get () = ``type``
+      and set (v) = ``type`` <- v
+    member m.Turn
+      with get () = turn
+      and set (v) = turn <- v   
+
+  type BuffDto () =
+    let mutable buffID = Unchecked.defaultof<int>
+    let mutable buffType = Unchecked.defaultof<BuffTypeDto>
+    let mutable buffDuration = Unchecked.defaultof<BuffDurationDto>
+    let mutable pieceID = Unchecked.defaultof<int>
+    
+    member m.BuffID
+      with get () = buffID
+      and set (v) = buffID <- v
+    member m.BuffType
+      with get () = buffType
+      and set (v) = buffType <- v
+    member m.BuffDuration
+      with get () = buffDuration
+      and set (v) = buffDuration <- v
+    member m.PieceID
+      with get () = pieceID
+      and set (v) = pieceID <- v
 
   type TileDto () =
     let mutable color = Unchecked.defaultof<ColorDto>
@@ -269,10 +318,15 @@ module DtoTypes =
   
   type UiComponentsDto = IDictionary<string, UiComponentDto>
   
+  type DynamicTextDto = string
+  
+  type DynamicTextsDto = IDictionary<string, DynamicTextDto>
+  
   type UiWellDto () =
     let mutable popups = Array.empty;
     let mutable popupStates = Unchecked.defaultof<PopupStatesDto>
     let mutable components = Unchecked.defaultof<UiComponentsDto>
+    let mutable dynamicTexts = Unchecked.defaultof<DynamicTextsDto>
         
     member m.Popups
       with get () = popups
@@ -283,6 +337,9 @@ module DtoTypes =
     member m.Components
       with get () = components
       and set (v) = components <- v
+    member m.DynamicTexts
+      with get () = dynamicTexts
+      and set (v) = dynamicTexts <- v
     
   type TileWellDto = IDictionary<CoordinateDto, TileDto>
   
@@ -300,6 +357,8 @@ module DtoTypes =
   type PieceWellDto = IDictionary<CoordinateDto, PieceDto>
   
   type RuleWellDto = IDictionary<int, RuleDto>
+  
+  type BuffWellDto = BuffDto array
     
   type LifeWellDto (player, duel, connection) =
     let mutable player = player
@@ -328,6 +387,7 @@ module DtoTypes =
     let mutable pieceWell = Unchecked.defaultof<PieceWellDto>
     let mutable tileSelectionWell = Unchecked.defaultof<TileSelectionWellDto>
     let mutable tileWell = Unchecked.defaultof<TileWellDto>
+    let mutable buffWell = Unchecked.defaultof<BuffWellDto>
     let mutable uiWell = Unchecked.defaultof<UiWellDto>
     
     member m.LifeWell
@@ -345,6 +405,9 @@ module DtoTypes =
     member m.TileWell
       with get () = tileWell
       and set (v) = tileWell <- v
+    member m.BuffWell
+      with get () = buffWell
+      and set (v) = buffWell <- v
     member m.UiWell
       with get () = uiWell
       and set (v) = uiWell <- v  
@@ -516,6 +579,7 @@ module JsonConversions =
       match condition.Type with
       | "Always" -> Always |> Ok
       | "MoveCount" -> MoveCount |> Ok
+      | "TargetMoveCount" -> TargetMoveCount |> Ok
       | "ExposesKing" -> ExposesKing |> Ok
       | "PathBlocked" -> PathBlocked |> Ok
       | "OccupiedBy" -> condition.OccupiedBy |> DuelistTypeDto.import <!> OccupiedBy
@@ -631,10 +695,20 @@ module JsonConversions =
         dto.Other <- Tuple.toArray2 r.Other
         dto.MyMovement <- Tuple.toArray2 r.MyOffset
         dto.OtherMovement <- Tuple.toArray2 r.OtherOffset
+      | ConquerComboRule r ->
+        dto.Type <- "ConquerCombo"
+        dto.Condition <- ConditionsDto.export r.Condition
+        dto.TargetOffset <- Tuple.toArray2 r.TargetOffset
+        dto.MyMovement <- Tuple.toArray2 r.MyMovement
       | PromoteRule r ->
         dto.Type <- "Promote"
         dto.Condition <- ConditionsDto.export r.Condition
         dto.Ranks <- r.Ranks
+      | AddBuffOnMoveRule r ->
+        dto.Type <- "AddBuffOnMove"
+        dto.Condition <- ConditionsDto.export r.Condition
+        dto.TargetOffset <- Tuple.toArray2 r.TargetOffset
+        dto.BuffID <- r.BuffID
       | DefeatRule r ->
         dto.Type <- "Defeat"
         dto.Condition <- ConditionsDto.export r.Condition
@@ -673,6 +747,16 @@ module JsonConversions =
         <*> Tuple.fromArray2 rule.Other
         <*> Tuple.fromArray2 rule.MyMovement
         <*> Tuple.fromArray2 rule.OtherMovement
+      | "ConquerCombo" ->
+        Ok (fun c targetOffset myMovement ->
+          ConquerComboRule {
+            Condition = c;
+            TargetOffset = targetOffset;
+            MyMovement = myMovement;
+          })
+        <*> ConditionsDto.import rule.Condition
+        <*> Tuple.fromArray2 rule.TargetOffset
+        <*> Tuple.fromArray2 rule.MyMovement
       | "Promote" ->
         Ok (fun c r ->
           PromoteRule {
@@ -681,6 +765,16 @@ module JsonConversions =
           })
         <*> ConditionsDto.import rule.Condition
         <*> Nullable.toResult rule.Ranks
+      | "AddBuffOnMove" ->
+        Ok (fun c targetOffset buffID ->
+          AddBuffOnMoveRule {
+            Condition = c;
+            TargetOffset = targetOffset;
+            BuffID = buffID;
+          })
+        <*> ConditionsDto.import rule.Condition
+        <*> Tuple.fromArray2 rule.TargetOffset
+        <*> (Ok rule.BuffID)
       | "Defeat" ->
         Ok (fun c ->
           DefeatRule {
@@ -741,6 +835,59 @@ module JsonConversions =
       | "Knight" -> importPiece piece <!> Knight
       | "Pawn" -> importPiece piece <!> Pawn
       | _ -> Error ("No such piece: " + piece.Type)
+
+  module BuffTypeDto =
+    let export (buffType : BuffType) =
+      let dto = new BuffTypeDto ()
+      match buffType with
+      | AddRule rules ->
+        dto.Type <- "AddRule"
+        dto.Rules <- List.toArray rules
+        dto
+        
+    let import (buffType : BuffTypeDto) =
+      match buffType.Type with
+      | "AddRule" ->
+        List.ofArray buffType.Rules
+        |> AddRule
+        |> Ok
+      | _ -> Error ("No such buff type: " + buffType.Type)          
+
+  module BuffDurationDto =
+    let export (buffDuration : BuffDuration) =
+      let dto = new BuffDurationDto ()
+      match buffDuration with
+      | BuffDuration.Turn turns ->
+        dto.Type <- "Turn"
+        dto.Turn <- turns
+        dto
+        
+    let import (buffDuration : BuffDurationDto) =
+      match buffDuration.Type with
+      | "Turn" -> BuffDuration.Turn buffDuration.Turn |> Ok
+      | _ -> Error ("No such buff duration: " + buffDuration.Type)
+      
+  module BuffDto =
+    let export (buff : Buff) =
+      let dto = new BuffDto ()
+      dto.BuffID <- buff.ID
+      dto.BuffType <- BuffTypeDto.export buff.Type
+      dto.BuffDuration <- BuffDurationDto.export buff.Duration
+      dto.PieceID <- buff.PieceID
+      dto
+      
+    let import (buff : BuffDto) =
+      Ok (fun id ``type`` duration pieceID ->
+        {
+          ID = id;
+          Type = ``type``;
+          Duration = duration;
+          PieceID = pieceID;
+        })
+      <*> Ok buff.BuffID
+      <*> BuffTypeDto.import buff.BuffType
+      <*> BuffDurationDto.import buff.BuffDuration
+      <*> Ok buff.PieceID
 
   module TileDto =
     let export (tile : Tile) =
@@ -815,6 +962,10 @@ module JsonConversions =
         dto.Type <- "Win"
         dto.Value <- ColorDto.export color
         dto
+      | RequestRematch color ->
+        dto.Type <- "RequestRematch"
+        dto.Value <- ColorDto.export color
+        dto
 
     let import (endedState : EndedStateDto) =
       match endedState.Type with
@@ -823,6 +974,9 @@ module JsonConversions =
       | "Win" -> 
         ColorDto.import endedState.Value
         <!> (fun color -> Win color)
+      | "RequestRematch" ->
+        ColorDto.import endedState.Value
+        <!> (fun color -> RequestRematch color)
       | t ->
         Error ("No such EndedState: " + t)
 
@@ -885,11 +1039,23 @@ module JsonConversions =
       match popup with
       | Login -> "Login"
       | PlayDuel -> "PlayDuel"
+      | ConfirmRemise -> "ConfirmRemise"
+      | RemiseRefused -> "RemiseRefused"
+      | ConfirmRematch -> "ConfirmRematch"
+      | AwaitRematchResponse -> "AwaitRematchResponse"
+      | AwaitRemiseResponse -> "AwaitRemiseResponse"
+      | RematchRefused -> "RematchRefused"
       
     let import (popup : PopupDto) =
       match popup with
       | "Login" -> Ok Login
       | "PlayDuel" -> Ok PlayDuel
+      | "ConfirmRemise" -> Ok ConfirmRemise
+      | "RemiseRefused" -> Ok RemiseRefused
+      | "ConfirmRematch" -> Ok ConfirmRematch
+      | "AwaitRematchResponse" -> Ok AwaitRematchResponse
+      | "AwaitRemiseResponse" -> Ok AwaitRemiseResponse
+      | "RematchRefused" -> Ok RematchRefused
       | d -> Error ("No such popup: " + d)
       
   module LoginPopupStateDto =
@@ -912,7 +1078,6 @@ module JsonConversions =
       Ok PopupStates.create
       <*> LoginPopupStateDto.import popupStates.LoginPopupState    
 
-  [<System.Serializable>]
   module UiComponentDto =
     let export (uiComponent : UiComponent) =
       let dto = new UiComponentDto ()
@@ -922,8 +1087,8 @@ module JsonConversions =
       
     let import (uiComponent : UiComponentDto) =
       Ok UiComponent.create
-      <*> Nullable.toResult uiComponent.Visible
-      <*> Nullable.toResult uiComponent.Interactable
+      <*> Ok uiComponent.Visible
+      <*> Ok uiComponent.Interactable
    
   module UiComponentsDto =
     let export (uiComponents : UiComponents) =
@@ -939,12 +1104,25 @@ module JsonConversions =
       |> Result.unwrapCol
       <!> Col.toMap
       
+  module DynamicTextsDto =
+    let export (dynamicTexts : DynamicTexts) =
+      dynamicTexts
+      |> Map
+      |> Col.toDict
+      
+    let import (dynamicTexts : DynamicTextsDto) =
+      dynamicTexts
+      |> Dict
+      |> Col.toMap
+      |> Ok
+      
   module UiWellDto =
     let export (ui : UiWell) =
       let dto = new UiWellDto ()
       dto.Popups <- List.map PopupDto.export ui.Popups |> List.toArray
       dto.PopupStates <- PopupStatesDto.export ui.PopupStates
       dto.Components <- UiComponentsDto.export ui.Components
+      dto.DynamicTexts <- DynamicTextsDto.export ui.DynamicTexts
       dto
       
     let import (ui : UiWellDto) =
@@ -952,6 +1130,7 @@ module JsonConversions =
       <*> (ui.Popups |> (List.ofArray >> List.map PopupDto.import >> Result.unwrap))
       <*> PopupStatesDto.import ui.PopupStates
       <*> UiComponentsDto.import ui.Components
+      <*> DynamicTextsDto.import ui.DynamicTexts
       
   module TileWellDto =
     let export (tileWell : TileWell) =
@@ -1015,6 +1194,18 @@ module JsonConversions =
         | Error e, _ -> Error e
       ) (Map Map.empty |> Ok)
       <!> Col.toMap  
+ 
+  module BuffWellDto =
+    let export (buffWell : BuffWell) =
+      buffWell
+      |> List.map BuffDto.export
+      |> List.toArray
+      
+    let import (buffWell : BuffWellDto) =
+      buffWell
+      |> List.ofArray
+      |> List.map BuffDto.import
+      |> Result.unwrap
             
   module LifeWellDto =
     let export (lifewell : LifeWell) =
@@ -1057,17 +1248,19 @@ module JsonConversions =
       Option.map (fun pieceWell -> dto.PieceWell <- PieceWellDto.export pieceWell) wellCollection.PieceWell |> ignore
       Option.map (fun tileSelectionWell -> dto.TileSelectionWell <- TileSelectionWellDto.export tileSelectionWell) wellCollection.TileSelectionWell |> ignore
       Option.map (fun tileWell -> dto.TileWell <- TileWellDto.export tileWell) wellCollection.TileWell |> ignore
+      Option.map (fun buffWell -> dto.BuffWell <- BuffWellDto.export buffWell) wellCollection.BuffWell |> ignore
       Option.map (fun uiWell -> dto.UiWell <- UiWellDto.export uiWell) wellCollection.UiWell |> ignore
       dto
       
     let import (wellCollection : WellCollectionDto) =
-      Ok (fun lifeWell ruleWell pieceWell tileSelectionWell tileWell uiWell ->
+      Ok (fun lifeWell ruleWell pieceWell tileSelectionWell tileWell buffWell uiWell ->
         { 
           LifeWell = lifeWell;
           RuleWell = ruleWell;
           PieceWell = pieceWell;
           TileSelectionWell = tileSelectionWell;
           TileWell = tileWell;
+          BuffWell = buffWell;
           UiWell = uiWell
         }
       )
@@ -1090,6 +1283,10 @@ module JsonConversions =
       <*>
         match Nullable.toOption wellCollection.TileWell with
         | Some well -> TileWellDto.import well |> Result.map Some
+        | None -> Ok None
+      <*>
+        match Nullable.toOption wellCollection.BuffWell with
+        | Some well -> BuffWellDto.import well |> Result.map Some
         | None -> Ok None
       <*>
         match Nullable.toOption wellCollection.UiWell with

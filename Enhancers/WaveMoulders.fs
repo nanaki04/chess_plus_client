@@ -6,6 +6,7 @@ open Waves
 module Moulds =
   open Result
   open System
+  open Types
 
   type Importable =
     abstract member import : unit -> Result<Maelstrom.Wave<Amplitude>, string>
@@ -44,6 +45,25 @@ module Moulds =
       let dto = new Mould ()
       dto.Location <- LocationMould.export location
       dto
+ 
+  type DefaultMould () =
+    let mutable location = Unchecked.defaultof<LocationMould>
+    
+    member m.Location
+      with get() = location
+      and set(v) = location <- v
+    
+    static member export (wave) =
+      let (loc, ampl : DefaultAmplitude) = wave
+      let m = new DefaultMould ()
+      m.Location <- LocationMould.export loc
+      m
+      
+    interface Importable with
+      member m.import () =
+        Nullable.toResult m.Location
+        >>= fun loc -> loc.import ()
+        <!> fun loc -> (loc, DefaultAmplitude ())
       
   type TextMould () =
     let mutable location = Unchecked.defaultof<LocationMould>
@@ -271,6 +291,7 @@ module Moulds =
     let mutable tileSelections = Unchecked.defaultof<TileSelectionWellDto>
     let mutable pieces = Unchecked.defaultof<PieceWellDto>
     let mutable rules = Unchecked.defaultof<RuleWellDto>
+    let mutable buffs = Unchecked.defaultof<BuffWellDto>
     
     member m.Location
       with get() = location
@@ -290,6 +311,9 @@ module Moulds =
     member m.Rules
       with get () = rules
       and set (v) = rules <- v
+    member m.Buffs
+      with get () = buffs
+      and set (v) = buffs <- v
       
     static member export (wave) =
       let (loc, ampl : StartDuelAmplitude) = wave
@@ -300,23 +324,26 @@ module Moulds =
       m.TileSelections <- ampl.TileSelections |> TileSelectionWellDto.export
       m.Pieces <- ampl.Pieces |> PieceWellDto.export
       m.Rules <- ampl.Rules |> RuleWellDto.export
+      m.Buffs <- ampl.Buffs |> BuffWellDto.export
       m
     
     interface Importable with
       member m.import () =
-        Ok (fun duel tiles tileSelections pieces rules ->
+        Ok (fun duel tiles tileSelections pieces rules buffs ->
           StartDuelAmplitude {
             Duel = duel;
             Tiles = tiles;
             TileSelections = tileSelections;
             Pieces = pieces;
             Rules = rules;
+            Buffs = buffs;
           })
         <*> DuelDto.import m.Duel
         <*> TileWellDto.import m.Tiles
         <*> TileSelectionWellDto.import m.TileSelections
         <*> PieceWellDto.import m.Pieces
         <*> RuleWellDto.import m.Rules
+        <*> BuffWellDto.import m.Buffs
         <!> startDuelWave
         
   type JoinDuelMould () =
@@ -372,7 +399,34 @@ module Moulds =
           })
         <*> DuelistDto.import m.Duelist
         <!> addDuelistWave
-
+        
+  type RemoveDuelistMould () =
+    let mutable location = Unchecked.defaultof<LocationMould>
+    let mutable duelist = Unchecked.defaultof<DuelistDto>
+    
+    member m.Location
+      with get() = location
+      and set(v) = location <- v    
+    member m.Duelist
+      with get() = duelist
+      and set(v) = duelist <- v  
+      
+    static member export (wave) =
+      let (loc, ampl : RemoveDuelistAmplitude) = wave
+      let m = new RemoveDuelistMould ()
+      m.Location <- LocationMould.export loc
+      m.Duelist <- ampl.Duelist |> DuelistDto.export
+      m
+      
+    interface Importable with
+      member m.import () =
+        Ok (fun duelist ->
+          RemoveDuelistAmplitude {
+            Duelist = duelist;
+          })
+        <*> DuelistDto.import m.Duelist
+        <!> removeDuelistWave
+        
   type AddPieceMould () =
     let mutable location = Unchecked.defaultof<LocationMould>
     let mutable piece = Unchecked.defaultof<PieceDto>
@@ -501,7 +555,34 @@ module Moulds =
           })
         <*> PieceDto.import  m.Piece
         <!> promotePieceWave 
-        
+ 
+  type UpdateBuffsMould () =
+    let mutable location = Unchecked.defaultof<LocationMould>
+    let mutable buffs = Unchecked.defaultof<BuffWellDto>
+    
+    member m.Location
+      with get() = location
+      and set(v) = location <- v
+    member m.Buffs
+      with get() = buffs
+      and set(v) = buffs <- v
+      
+    static member export (wave) =
+      let (loc, ampl : UpdateBuffsAmplitude) = wave
+      let m = new UpdateBuffsMould ()
+      m.Location <- LocationMould.export loc
+      m.Buffs <- ampl.Buffs |> BuffWellDto.export
+      m
+    
+    interface Importable with
+      member m.import () =
+        Ok (fun buffs ->
+          UpdateBuffsAmplitude {
+            Buffs = buffs;
+          })
+        <*> BuffWellDto.import m.Buffs
+        <!> updateBuffsWave
+          
   type ConquerTileMould () =
     let mutable location = Unchecked.defaultof<LocationMould>
     let mutable piece = Unchecked.defaultof<PieceDto>
@@ -810,7 +891,7 @@ module Moulds =
             Popup = popup;
           })
         <*> (PopupDto.import m.Popup)
-        <!> closePopupWave   
+        <!> closePopupWave
         
   let exportMould wave =
     match wave with
@@ -821,6 +902,7 @@ module Moulds =
     | (loc, ReportFailureAmplitude ampl) -> ReportFailureMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (loc, StartDuelAmplitude ampl) -> StartDuelMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (loc, AddDuelistAmplitude ampl) -> AddDuelistMould.export (loc, ampl) |> JsonConversions.export |> Ok
+    | (loc, RemoveDuelistAmplitude ampl) -> RemoveDuelistMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (loc, UpdateDuelStateAmplitude ampl) -> UpdateDuelStateMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (("player", "in"), DefaultAmplitude _ampl) -> Mould.export ("player", "in") |> JsonConversions.export |> Ok
     | (loc, OpenPopupAmplitude ampl) -> OpenPopupMould.export (loc, ampl) |> JsonConversions.export |> Ok
@@ -841,6 +923,30 @@ module Moulds =
     | (loc, MovePieceAmplitude ampl) -> MovePieceMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (loc, AddPieceAmplitude ampl) -> AddPieceMould.export (loc, ampl) |> JsonConversions.export |> Ok
     | (loc, RemovePieceAmplitude ampl) -> RemovePieceMould.export (loc, ampl) |> JsonConversions.export |> Ok
+    | (loc, UpdateBuffsAmplitude ampl) -> UpdateBuffsMould.export (loc, ampl) |> JsonConversions.export |> Ok
+    | (("white_player", "information_plate"), UiComponentAmplitude ampl) -> UiComponentMould.export (("white_player", "information_plate"), ampl) |> JsonConversions.export |> Ok
+    | (("black_player", "information_plate"), UiComponentAmplitude ampl) -> UiComponentMould.export (("black_player", "information_plate"), ampl) |> JsonConversions.export |> Ok
+    | (("white_player", "name"), DefaultAmplitude _ampl) -> Mould.export ("white_player", "name") |> JsonConversions.export |> Ok
+    | (("black_player", "name"), DefaultAmplitude _ampl) -> Mould.export ("black_player", "name") |> JsonConversions.export |> Ok
+    | (("game_menu", "menu"), UiComponentAmplitude ampl) -> UiComponentMould.export (("game_menu", "menu"), ampl) |> JsonConversions.export |> Ok
+    | (("game_menu", "click_forfeit"), DefaultAmplitude _ampl) -> Mould.export ("game_menu", "click_forfeit") |> JsonConversions.export |> Ok
+    | (("game_menu", "click_remise"), DefaultAmplitude _ampl) -> Mould.export ("game_menu", "click_remise") |> JsonConversions.export |> Ok
+    | (("duelist", "forfeit"), DefaultAmplitude _ampl) -> Mould.export ("duelist", "forfeit") |> JsonConversions.export |> Ok
+    | (("duelist", "propose_remise"), DefaultAmplitude _ampl) -> Mould.export ("duelist", "propose_remise") |> JsonConversions.export |> Ok
+    | (("duelist", "remise"), DefaultAmplitude _ampl) -> Mould.export ("duelist", "remise") |> JsonConversions.export |> Ok
+    | (("duelist", "refuse_remise"), DefaultAmplitude _ampl) -> Mould.export ("duelist", "refuse_remise") |> JsonConversions.export |> Ok
+    | (("duelist", "request_rematch"), DefaultAmplitude _ampl) -> Mould.export ("duelist", "request_rematch") |> JsonConversions.export |> Ok
+    | (("duelist", "refuse_rematch"), DefaultAmplitude _ampl) -> Mould.export ("duelist", "refuse_rematch") |> JsonConversions.export |> Ok
+    | (("duel", "rematch"), DefaultAmplitude _ampl) -> Mould.export ("duel", "rematch") |> JsonConversions.export |> Ok
+    | (("confirm_remise_popup", "click_yes"), DefaultAmplitude _ampl) -> Mould.export ("confirm_remise_popup", "click_yes") |> JsonConversions.export |> Ok
+    | (("confirm_remise_popup", "click_no"), DefaultAmplitude _ampl) -> Mould.export ("confirm_remise_popup", "click_no") |> JsonConversions.export |> Ok
+    | (("refuse_remise_popup", "click_ok"), DefaultAmplitude _ampl) -> Mould.export ("refuse_remise_popup", "click_ok") |> JsonConversions.export |> Ok
+    | (("duel_state_plate", "menu"), UiComponentAmplitude ampl) -> UiComponentMould.export (("duel_state_plate", "menu"), ampl) |> JsonConversions.export |> Ok
+    | (("duel_state_plate", "rematch_button"), UiComponentAmplitude ampl) -> UiComponentMould.export (("duel_state_plate", "rematch_button"), ampl) |> JsonConversions.export |> Ok
+    | (("duel_state_plate", "join_button"), UiComponentAmplitude ampl) -> UiComponentMould.export (("duel_state_plate", "join_button"), ampl) |> JsonConversions.export |> Ok
+    | (("duel_state_plate", "click_rematch"), DefaultAmplitude _ampl) -> Mould.export ("duel_state_plate", "click_rematch") |> JsonConversions.export |> Ok
+    | (("duel_state_plate", "click_new"), DefaultAmplitude _ampl) -> Mould.export ("duel_state_plate", "click_new") |> JsonConversions.export |> Ok
+    | (("duel_state_plate", "click_join"), DefaultAmplitude _ampl) -> Mould.export ("duel_state_plate", "click_join") |> JsonConversions.export |> Ok
     | ((domain, invocation), _) -> Error ("Unmatched Wave: " + domain + ":" + invocation)
                   
   let inline make<'t when 't :> Importable> mould  =
@@ -859,6 +965,7 @@ module Moulds =
     | l when l = startDuelLocation -> make<StartDuelMould> mould
     | l when l = joinDuelLocation -> make<JoinDuelMould> mould
     | l when l = addDuelistLocation -> make<AddDuelistMould> mould
+    | l when l = removeDuelistLocation -> make<RemoveDuelistMould> mould
     | l when l = addPieceLocation -> make<AddPieceMould> mould
     | l when l = removePieceLocation -> make<RemovePieceMould> mould
     | l when l = movePieceLocation -> make<MovePieceMould> mould
@@ -870,5 +977,23 @@ module Moulds =
     | l when l = confirmDeselectTileLocation -> make<ConfirmDeselectTileMould> mould
     | l when l = addOpenDuelsLocation -> make<AddOpenDuelsMould> mould
     | l when l = updateDuelStateLocation -> make<UpdateDuelStateMould> mould
+    | l when l = whitePlayerInformationPlateLocation -> make<UiComponentMould> mould
+    | l when l = blackPlayerInformationPlateLocation -> make<UiComponentMould> mould
+    | l when l = whitePlayerNameDynamicText -> make<DefaultMould> mould // TODO
+    | l when l = blackPlayerNameDynamicText -> make<DefaultMould> mould
+    | l when l = gameMenuLocation -> make<UiComponentMould> mould
+    | l when l = gameMenuClickForfeitButtonLocation -> make<DefaultMould> mould
+    | l when l = gameMenuClickRemiseButtonLocation -> make<DefaultMould> mould
+    | l when l = forfeitDuelLocation -> make<DefaultMould> mould
+    | l when l = proposeRemiseLocation -> make<DefaultMould> mould
+    | l when l = remiseLocation -> make<DefaultMould> mould
+    | l when l = refuseRemiseLocation -> make<DefaultMould> mould
+    | l when l = confirmRemisePopupClickYesButtonLocation -> make<DefaultMould> mould
+    | l when l = confirmRemisePopupClickNoButtonLocation -> make<DefaultMould> mould
+    | l when l = remiseRefusedPopupClickOkButtonLocation -> make<DefaultMould> mould
+    | l when l = requestRematchLocation -> make<DefaultMould> mould
+    | l when l = refuseRematchLocation -> make<DefaultMould> mould
+    | l when l = duelStatePlateMenuLocation -> make<UiComponentMould> mould
+    | l when l = duelStatePlateRematchButtonLocation -> make<UiComponentMould> mould
     | l -> Error ("Wave location not found: " + (Tuple.fst l).ToString() + ", " + (Tuple.snd l).ToString())
     

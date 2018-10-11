@@ -8,6 +8,7 @@ module Tcp =
   open EnvAccessor
 
   //let client = new TcpClient("192.168.13.211", 1338)
+  //let endpoint = new IPEndPoint(localIPAddress, clientPort);
   let client = new TcpClient(env.TcpServerAddress, env.TcpServerPort)
   let stream = client.GetStream ()
   

@@ -9,6 +9,8 @@ module Fetchers =
   
   let mutable fetchUiWell = fun () -> UiWell.initial
   
+  let mutable fetchBuffWell = fun () -> ([] : BuffWell)
+  
   let mutable fetchTileWell = fun () -> TileWell.initial
   
   let mutable fetchTileSelectionWell = fun () -> TileSelectionWell.initial
@@ -59,8 +61,7 @@ module Fetchers =
     |> findPiece coord
     
   let fetchPieceRuleIDs coord =
-    fetchPieceWell ()
-    |> findPieceRuleIDs coord
+    findPieceRuleIDs coord (fetchPieceWell ()) (fetchBuffWell ())
     
   let fetchPieceRules coord =
     let rules = fetchRuleWell ()
@@ -155,3 +156,7 @@ module Fetchers =
       fetchConquerableTileCoords color
     | None ->
       List.empty
+      
+  let fetchDynamicText location =
+    let well = fetchUiWell ()
+    findDynamicText location well

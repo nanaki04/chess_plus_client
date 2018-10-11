@@ -45,6 +45,26 @@ module Finders =
     findDuel lifeWell
     |> Option.map (fun duel -> duel.DuelState)
     
+  let findBuffsByPieceID pieceID buffWell =
+    List.filter (fun {PieceID = targetPieceID} -> pieceID = targetPieceID) buffWell
+  
+  let findAddRuleBuffsByPieceID pieceID buffWell =
+    List.filter (fun {PieceID = targetPieceID; Type = buffType} ->
+      match buffType with
+      | AddRule _ -> pieceID = targetPieceID
+      | _ -> false
+    ) buffWell
+    
+  let findRulesAddedByBuffs pieceID buffWell =
+    findAddRuleBuffsByPieceID pieceID buffWell
+    |> List.fold (fun all_rules {Type = buffType} ->
+      match buffType with
+      | AddRule rules ->
+        Logger.log "found add rule buff on piece!!"
+        List.append all_rules rules
+      | _ -> all_rules
+    ) []
+    
   let findWhiteSelections well =
     well.White
     
@@ -119,33 +139,45 @@ module Finders =
   let findBlackPieces : (PieceWell -> Pieces list) =
     findPiecesByColor Black
         
-  let findPieceRuleIDs coord well =
-    findPiece coord well
-    <!> Types.Pieces.map (fun p -> p.Rules)   
+  let findPieceRuleIDs coord pieceWell buffWell =
+    findPiece coord pieceWell
+    <!> Types.Pieces.map (fun p ->
+      findRulesAddedByBuffs p.ID buffWell
+      |> List.append p.Rules
+    )   
     
-  let findPieceRules coord ruleWell pieceWell =
-    findPieceRuleIDs coord pieceWell
+  let findPieceRules coord ruleWell pieceWell buffWell =
+    findPieceRuleIDs coord pieceWell buffWell
     <!> List.map (fun k -> Map.tryFind k ruleWell)
     >>= Option.unwrap
     
-  let findPieceConquerRules coord ruleWell pieceWell =
-    findPieceRules coord ruleWell pieceWell
+  let findPieceConquerRules coord ruleWell pieceWell buffWell =
+    findPieceRules coord ruleWell pieceWell buffWell
     <!> List.filter (fun r ->
       match r with
       | ConquerRule _ -> true
       | _ -> false
     )
     
-  let findPieceMovementRules coord ruleWell pieceWell =
-    findPieceRules coord ruleWell pieceWell
+  let findPieceConquerAndComboRules coord ruleWell pieceWell buffWell =
+    findPieceRules coord ruleWell pieceWell buffWell
+    <!> List.filter (fun r ->
+      match r with
+      | ConquerRule _ -> true
+      | ConquerComboRule _ -> true
+      | _ -> false
+    )
+    
+  let findPieceMovementRules coord ruleWell pieceWell buffWell =
+    findPieceRules coord ruleWell pieceWell buffWell
     <!> List.filter (fun r ->
       match r with
       | MoveRule _ -> true
       | _ -> false
     )
     
-  let findPieceMovementAndComboRules coord ruleWell pieceWell =
-    findPieceRules coord ruleWell pieceWell
+  let findPieceMovementAndComboRules coord ruleWell pieceWell buffWell =
+    findPieceRules coord ruleWell pieceWell buffWell
     <!> List.filter (fun r ->
       match r with
       | MoveRule _ -> true
@@ -170,6 +202,14 @@ module Finders =
   let findUiComponent id well =
     well
     |> findUiComponents
+    |> Map.tryFind id
+    
+  let findDynamicTexts well =
+    well.DynamicTexts
+    
+  let findDynamicText id well =
+    well
+    |> findDynamicTexts
     |> Map.tryFind id
     
   let findOwnSelectedTileCoords tileSelectionWell lifeWell =

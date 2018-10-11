@@ -45,6 +45,7 @@ type DuelistType =
 type Condition =
 | Always
 | MoveCount
+| TargetMoveCount
 | ExposesKing
 | PathBlocked
 | OccupiedBy of DuelistType
@@ -90,9 +91,21 @@ type MoveComboRule = {
   OtherOffset : int * int;
 }
 
+type ConquerComboRule = {
+  Condition : Conditions;
+  TargetOffset : int * int;
+  MyMovement : int * int;
+}
+
 type PromoteRule = {
   Condition : Conditions;
   Ranks : int;
+}
+
+type AddBuffOnMoveRule = {
+  Condition : Conditions;
+  TargetOffset : int * int;
+  BuffID : int;
 }
 
 type DefeatRule = {
@@ -107,7 +120,9 @@ type Rule =
 | MoveRule of MoveRule
 | ConquerRule of ConquerRule
 | MoveComboRule of MoveComboRule
+| ConquerComboRule of ConquerComboRule
 | PromoteRule of PromoteRule
+| AddBuffOnMoveRule of AddBuffOnMoveRule
 | DefeatRule of DefeatRule
 | RemiseRule of RemiseRule
 
@@ -137,6 +152,21 @@ type Pieces =
 | Bishop of Bishop
 | Knight of Knight
 | Pawn of Pawn
+
+type BuffID = int
+
+type BuffType =
+| AddRule of int list
+
+type BuffDuration =
+| Turn of int
+
+type Buff = {
+  ID : BuffID;
+  Type : BuffType;
+  Duration : BuffDuration;
+  PieceID : PieceID;
+}
 
 type Territory =
 | Classic
@@ -246,6 +276,7 @@ module Types =
       match c with
       | Always -> "Always"
       | MoveCount -> "MoveCount"
+      | TargetMoveCount -> "TargetMoveCount"
       | ExposesKing -> "ExposesKing"
       | PathBlocked -> "PathBlocked"
       | OccupiedBy _ -> "OccupiedBy"
@@ -302,6 +333,9 @@ module Types =
       
     let id p =
       map (fun p -> p.ID) p
+    
+    let moveCount p =
+      map (fun p -> p.MoveCount) p
       
     let toString p =
       match p with

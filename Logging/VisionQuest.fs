@@ -72,6 +72,17 @@ module VisionQuest =
     
     None
     
+  let private sendQuitSignal () =
+    let packet = new Packet ()
+    packet.Domain <- "client"
+    packet.Invocation <- "remove"
+    packet.Payload <- new PayloadDto ()
+    packet.Payload.Json <- ""
+    
+    packet
+    |> export
+    |> VisionQuestTcp.send
+    
   let private reportWave wave =
     let ((domain, invocation), _) = wave
     call (fun historyItem ->
@@ -112,6 +123,9 @@ module VisionQuest =
       | Some historyItem, TileWell w ->
         historyItem.StateType <- "TileWell"
         historyItem.State <- TileWellDto.export w |> export
+        sendItem historyItem
+      | Some historyItem, BuffWell w ->
+        historyItem.StateType <- "BuffWell"
         sendItem historyItem
       | Some historyItem, UiWell w ->
         historyItem.StateType <- "UiWell"
@@ -173,6 +187,12 @@ module VisionQuest =
     EnvAccessor.env.VisionQuestDebuggingEnabled
     |> Option.fromBool
     |> Option.map (fun _ -> reportWellCollection wave wellCollection)
+    |> ignore
+    
+  let quit () =
+    EnvAccessor.env.VisionQuestDebuggingEnabled
+    |> Option.fromBool
+    |> Option.map (fun _ -> sendQuitSignal ())
     |> ignore
   
   if EnvAccessor.env.VisionQuestDebuggingEnabled  

@@ -6,7 +6,7 @@ module Udp =
   open System.Text
   open EnvAccessor
 
-  let client = new UdpClient (env.UdpClientPort)
+  let client = new UdpClient ()
   //let ip = IPAddress.Parse("192.168.13.211")
   let ip = IPAddress.Parse(env.UdpServerAddress)
   let server = new IPEndPoint (ip, env.UdpServerPort)

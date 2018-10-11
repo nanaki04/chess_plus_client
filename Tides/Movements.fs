@@ -40,7 +40,15 @@ module Movements =
     | { TileSelectionWell = Some tileSelectionWell; PieceWell = Some pieceWell } ->
       findSelectedTileCoord playerColor tileSelectionWell
       >>= fun coord -> if Pool.Pieces.isPlayerPiece coord pieceWell then Some coord else None
-      <!> fun coord -> (findPieceMovementAndComboRules coord (fetchRuleWell ()) pieceWell, findPiece coord pieceWell)
+      <!> (fun coord ->
+        (findPieceMovementAndComboRules
+          coord
+          (fetchRuleWell ())
+          pieceWell
+          (fetchBuffWell ())
+          , findPiece coord pieceWell
+        )
+      )
       |> function
       | Some (Some rules, piece) ->
         filterSatisfiedRules rules piece wellCollection

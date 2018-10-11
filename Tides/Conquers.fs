@@ -11,10 +11,13 @@ module Conquers =
   let (<*>) = Option.apply
   
   let private areRuleConditionsMet rule piece isSimulation wellCollection =
-    ConquerRule.map (fun { Condition = conditions } ->
+    match rule with
+    | ConquerRule { Condition = conditions } ->
       Clauses.areMet conditions rule piece isSimulation wellCollection
-    ) rule
-    |> Option.defaultValue (Ok false)
+    | ConquerComboRule { Condition = conditions } ->
+      Clauses.areMet conditions rule piece isSimulation wellCollection
+    | _ ->
+      Ok false
     
   let private filterSatisfiedRules (rules : Rule list) piece isSimulation wellCollection =
     let (<*>) = Result.apply
@@ -37,7 +40,15 @@ module Conquers =
     | { TileSelectionWell = Some tileSelectionWell; PieceWell = Some pieceWell } ->
       findSelectedTileCoord playerColor tileSelectionWell
       >>= fun coord -> if Pool.Pieces.isPlayerPiece coord pieceWell then Some coord else None
-      <!> fun coord -> (fetchPieceConquerRules coord, findPiece coord pieceWell)
+      <!> (fun coord ->
+        (findPieceConquerAndComboRules
+          coord
+          (fetchRuleWell ())
+          pieceWell
+          (fetchBuffWell ())
+          , findPiece coord pieceWell
+        )
+      )
       |> function
       | Some (Some rules, piece) ->
         filterSatisfiedRules rules piece isSimulation wellCollection
@@ -72,7 +83,7 @@ module Conquers =
       Types.Pieces.coord piece
       >>= (fun pieceCoord -> 
         let offset = Types.Coordinate.getOffset pieceCoord coord
-        findPieceConquerRules pieceCoord (fetchRuleWell ()) pieceWell
+        findPieceConquerAndComboRules pieceCoord (fetchRuleWell ()) pieceWell (fetchBuffWell ())
         <!> List.filter (fun rule ->
           match rule with
           | ConquerRule { Offset = ruleOffset } -> ruleOffset = offset

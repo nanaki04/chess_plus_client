@@ -119,5 +119,18 @@ module Updaters =
         Map.tryFind id components
         |> fun uiComponent -> updater uiComponent
         |> Option.map (fun uiComponent -> Map.add id uiComponent components)
-        |> Option.defaultValue components
+        |> Option.defaultValue components // TODO remove
+      )
+      
+    let updateDynamicTexts updater well =
+      { well with DynamicTexts = updater well.DynamicTexts }
+      
+    let updateDynamicText location updater well =
+      let id = Types.Location.toString location
+      well
+      |> updateDynamicTexts (fun dynamicTexts ->
+        Map.tryFind id dynamicTexts
+        |> updater
+        |> Option.map (fun dynamicText -> Map.add id dynamicText dynamicTexts)
+        |> Option.defaultValue dynamicTexts // TODO remove
       )

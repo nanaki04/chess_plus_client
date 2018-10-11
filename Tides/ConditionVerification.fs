@@ -197,18 +197,25 @@ module ConditionVerification =
     | MoveCount, _, Some p, _ ->
       Types.Pieces.map (fun p -> p.MoveCount) p
       |> IntValue
-      |> Logger.inspect "int value"
       |> Operators.isMet operator
-      |> Logger.inspect "result"
+      |> Logger.inspect "condition: move count"
       
     | MoveCount, _, _, _ ->
       Ok false
+      
+    | TargetMoveCount, _, p, { PieceWell = Some pieceWell} ->
+      Pool.Pieces.findOtherPieceMovementCount rule p pieceWell
+      |> Option.map IntValue
+      |> Option.map (Operators.isMet operator)
+      |> Option.defaultValue (Ok false)
+      |> Logger.inspect "condition: target move count"
       
     | OtherPieceType pieceType, _, p, { PieceWell = Some pieceWell} ->
       Pool.Pieces.findOtherPieceType rule p pieceWell
       |> Option.map (fun otherPieceType -> pieceType = otherPieceType |> Conditional)
       |> Option.defaultValue (false |> Conditional)
       |> Operators.isMet operator
+      |> Logger.inspect "condition: other piece type"
     
     | OtherOwner owner, _, p, { PieceWell = Some pieceWell} ->
       match owner, Pool.Pieces.findOtherPieceColor rule p pieceWell with
