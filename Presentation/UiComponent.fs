@@ -39,7 +39,6 @@ type UiComponentView () =
     unsubscribe <- observeUiComponent (domain, invocation) m.OnComponentChange
     
     Logger.log (Types.Location.toString (domain, invocation))
-    Logger.warn state
     UiComponentDto.import state
     <!> (fun uiComponent ->
       flow ((domain, invocation), UiComponentAmplitude uiComponent)

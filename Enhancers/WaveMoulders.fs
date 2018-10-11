@@ -929,6 +929,8 @@ module Moulds =
     | (("white_player", "name"), DefaultAmplitude _ampl) -> Mould.export ("white_player", "name") |> JsonConversions.export |> Ok
     | (("black_player", "name"), DefaultAmplitude _ampl) -> Mould.export ("black_player", "name") |> JsonConversions.export |> Ok
     | (("game_menu", "menu"), UiComponentAmplitude ampl) -> UiComponentMould.export (("game_menu", "menu"), ampl) |> JsonConversions.export |> Ok
+    | (("game_menu", "remise_button"), UiComponentAmplitude ampl) -> UiComponentMould.export (("game_menu", "remise_button"), ampl) |> JsonConversions.export |> Ok
+    | (("game_menu", "forfeit_button"), UiComponentAmplitude ampl) -> UiComponentMould.export (("game_menu", "forfeit_button"), ampl) |> JsonConversions.export |> Ok
     | (("game_menu", "click_forfeit"), DefaultAmplitude _ampl) -> Mould.export ("game_menu", "click_forfeit") |> JsonConversions.export |> Ok
     | (("game_menu", "click_remise"), DefaultAmplitude _ampl) -> Mould.export ("game_menu", "click_remise") |> JsonConversions.export |> Ok
     | (("duelist", "forfeit"), DefaultAmplitude _ampl) -> Mould.export ("duelist", "forfeit") |> JsonConversions.export |> Ok
@@ -942,6 +944,7 @@ module Moulds =
     | (("confirm_remise_popup", "click_no"), DefaultAmplitude _ampl) -> Mould.export ("confirm_remise_popup", "click_no") |> JsonConversions.export |> Ok
     | (("refuse_remise_popup", "click_ok"), DefaultAmplitude _ampl) -> Mould.export ("refuse_remise_popup", "click_ok") |> JsonConversions.export |> Ok
     | (("duel_state_plate", "menu"), UiComponentAmplitude ampl) -> UiComponentMould.export (("duel_state_plate", "menu"), ampl) |> JsonConversions.export |> Ok
+    | (("duel_state_plate", "new_button"), UiComponentAmplitude ampl) -> UiComponentMould.export (("duel_state_plate", "new_button"), ampl) |> JsonConversions.export |> Ok
     | (("duel_state_plate", "rematch_button"), UiComponentAmplitude ampl) -> UiComponentMould.export (("duel_state_plate", "rematch_button"), ampl) |> JsonConversions.export |> Ok
     | (("duel_state_plate", "join_button"), UiComponentAmplitude ampl) -> UiComponentMould.export (("duel_state_plate", "join_button"), ampl) |> JsonConversions.export |> Ok
     | (("duel_state_plate", "click_rematch"), DefaultAmplitude _ampl) -> Mould.export ("duel_state_plate", "click_rematch") |> JsonConversions.export |> Ok
@@ -995,5 +998,6 @@ module Moulds =
     | l when l = refuseRematchLocation -> make<DefaultMould> mould
     | l when l = duelStatePlateMenuLocation -> make<UiComponentMould> mould
     | l when l = duelStatePlateRematchButtonLocation -> make<UiComponentMould> mould
+    | l when l = updateBuffsLocation -> make<UpdateBuffsMould> mould
     | l -> Error ("Wave location not found: " + (Tuple.fst l).ToString() + ", " + (Tuple.snd l).ToString())
     
