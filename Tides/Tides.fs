@@ -81,7 +81,7 @@ module Tides =
     tide<RemoveDuelistAmplitude> removeDuelistLocation (fun amplitude well ->
       LifeWell.updateDuelists (fun lst ->
         List.filter (fun duelist ->
-          duelist.Name = amplitude.Duelist.Name
+          duelist.Name <> amplitude.Duelist.Name
         ) lst
       ) well
     );
